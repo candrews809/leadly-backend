@@ -3,6 +3,35 @@
 
 import { createServer } from "http";
 
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
+const PRICE_IDS = {
+  starter: 'price_1TTCAsD9M5I52vZq3tu7za1b',
+  pro: 'price_1TTCCyD9M5I52vZqYTNu6boC',
+  agency: 'price_1TTCEQD9M5I52vZq9BSth9uA',
+};
+
+async function createCheckoutSession(plan) {
+  const priceId = PRICE_IDS[plan] || PRICE_IDS.starter;
+  const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      'payment_method_types[]': 'card',
+      'mode': 'subscription',
+      'line_items[0][price]': priceId,
+      'line_items[0][quantity]': '1',
+      'success_url': 'https://leadly-main.netlify.app?success=true',
+      'cancel_url': 'https://leadly-main.netlify.app?canceled=true',
+    }),
+  });
+  return res.json();
+}
+
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const NOTIFY_EMAIL = "sfgiants4cole@gmail.com";
 const PORT = process.env.PORT || 3000;

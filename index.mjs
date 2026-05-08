@@ -117,6 +117,24 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  
+  if (req.method === "POST" && req.url === "/checkout") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { plan } = JSON.parse(body);
+        const session = await createCheckoutSession(plan);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ url: session.url }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/leads") {
     let body = "";
     req.on("data", chunk => body += chunk);

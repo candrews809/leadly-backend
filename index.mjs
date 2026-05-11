@@ -106,6 +106,29 @@ const PRICE_IDS = {
   agency: 'price_1TTCEQD9M5I52vZq9BSth9uA',
 };
 
+
+async function fireWebhook(webhookUrl, lead) {
+  if (!webhookUrl) return;
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone || '',
+        message: lead.message || '',
+        business: lead.business || '',
+        source: lead.url || 'Leadly',
+        timestamp: new Date().toISOString(),
+      }),
+    });
+    console.log('Webhook fired:', webhookUrl);
+  } catch (err) {
+    console.log('Webhook error:', err.message);
+  }
+}
+
 async function createCheckoutSession(plan) {
   const priceId = PRICE_IDS[plan] || PRICE_IDS.starter;
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -271,6 +294,13 @@ const server = createServer(async (req, res) => {
         console.log("📥 New lead received:", lead);
 
         await sendLeadEmail(lead);
+
+        // Fire webhook if business has one
+        const businesses = loadBusinesses();
+        const bizEntry = Object.values(businesses).find(b => b.businessName === lead.business);
+        if (bizEntry?.webhookUrl) {
+          await fireWebhook(bizEntry.webhookUrl, lead);
+        }
 
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, message: "Lead captured!" }));

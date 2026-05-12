@@ -3,6 +3,48 @@
 
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import { createHmac, randomBytes } from "crypto";
+
+const USERS_FILE = "./users.json";
+const LEADS_FILE = "./captured-leads.json";
+
+function loadUsers() {
+  if (!existsSync(USERS_FILE)) return {};
+  try { return JSON.parse(readFileSync(USERS_FILE, "utf8")); }
+  catch { return {}; }
+}
+
+function saveUser(email, data) {
+  const users = loadUsers();
+  users[email] = data;
+  writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+function loadCapturedLeads() {
+  if (!existsSync(LEADS_FILE)) return [];
+  try { return JSON.parse(readFileSync(LEADS_FILE, "utf8")); }
+  catch { return []; }
+}
+
+function saveCapturedLead(lead) {
+  const leads = loadCapturedLeads();
+  leads.push(lead);
+  writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
+}
+
+function hashPassword(password) {
+  return createHmac('sha256', 'leadly-secret').update(password).digest('hex');
+}
+
+function generateToken() {
+  return randomBytes(32).toString('hex');
+}
+
+function getUserFromToken(token) {
+  const users = loadUsers();
+  return Object.values(users).find(u => u.token === token) || null;
+}
+
 
 const BUSINESSES_FILE = "./businesses.json";
 
@@ -106,6 +148,167 @@ const PRICE_IDS = {
   agency: 'price_1TTCEQD9M5I52vZq9BSth9uA',
 };
 
+
+
+function generateDashboardPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leadly Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'DM Sans', sans-serif; background: #080808; color: #f5f5f0; min-height: 100vh; }
+nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
+.logo span { color: #00e87a; }
+.logout { color: #888; cursor: pointer; font-size: 14px; background: none; border: none; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+.welcome { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.subtitle { color: #888; margin-bottom: 40px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.stat-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: #00e87a; }
+.stat-label { color: #888; font-size: 14px; margin-top: 4px; }
+.page-url { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 40px; }
+.page-url h3 { font-family: 'Syne', sans-serif; font-size: 16px; margin-bottom: 12px; }
+.url-box { display: flex; gap: 12px; align-items: center; }
+.url-text { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: #00e87a; font-size: 14px; word-break: break-all; }
+.copy-btn { background: #00e87a; color: #000; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.leads-section h3 { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 16px; }
+.lead-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
+.lead-name { font-weight: 600; margin-bottom: 4px; }
+.lead-email { color: #00e87a; font-size: 14px; margin-bottom: 4px; }
+.lead-time { color: #666; font-size: 12px; }
+.empty { text-align: center; padding: 60px; color: #666; }
+.login-box { max-width: 400px; margin: 80px auto; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; }
+.login-box h2 { font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 8px; }
+.login-box p { color: #888; margin-bottom: 24px; font-size: 14px; }
+input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 15px; margin-bottom: 12px; outline: none; }
+input:focus { border-color: rgba(0,232,122,0.4); }
+.btn { width: 100%; background: #00e87a; color: #000; border: none; padding: 14px; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.error { color: #ff4444; font-size: 14px; margin-bottom: 12px; }
+.tab { display: flex; gap: 12px; margin-bottom: 24px; }
+.tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 14px; }
+.tab-btn.active { background: #00e87a; color: #000; border-color: #00e87a; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const API = 'https://leadly-backend-tgbl.onrender.com';
+let token = localStorage.getItem('leadly_token');
+
+function render() {
+  if (token) {
+    showDashboard();
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('app').innerHTML = \`
+    <nav><div class="logo">Lead<span>ly</span></div></nav>
+    <div class="container">
+      <div class="login-box">
+        <h2>Welcome back</h2>
+        <p>Sign in to your Leadly dashboard</p>
+        <div class="tab">
+          <button class="tab-btn active" onclick="showTab('login')">Login</button>
+          <button class="tab-btn" onclick="showTab('signup')">Sign up</button>
+        </div>
+        <div id="login-form">
+          <div id="error" class="error" style="display:none"></div>
+          <input type="email" id="email" placeholder="Email address">
+          <input type="password" id="password" placeholder="Password">
+          <button class="btn" onclick="login()">Sign in</button>
+        </div>
+        <div id="signup-form" style="display:none">
+          <div id="error2" class="error" style="display:none"></div>
+          <input type="text" id="signup-name" placeholder="Your name">
+          <input type="text" id="signup-biz" placeholder="Business name">
+          <input type="email" id="signup-email" placeholder="Email address">
+          <input type="password" id="signup-password" placeholder="Password">
+          <button class="btn" onclick="signup()">Create account</button>
+        </div>
+      </div>
+    </div>
+  \`;
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='signup'&&i===1)));
+  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const res = await fetch(API + '/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, password}) });
+  const data = await res.json();
+  if (data.token) { token = data.token; localStorage.setItem('leadly_token', token); render(); }
+  else { document.getElementById('error').textContent = data.error; document.getElementById('error').style.display = 'block'; }
+}
+
+async function signup() {
+  const name = document.getElementById('signup-name').value;
+  const businessName = document.getElementById('signup-biz').value;
+  const email = document.getElementById('signup-email').value;
+  const password = document.getElementById('signup-password').value;
+  const res = await fetch(API + '/signup', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, email, password, businessName}) });
+  const data = await res.json();
+  if (data.token) { token = data.token; localStorage.setItem('leadly_token', token); render(); }
+  else { document.getElementById('error2').textContent = data.error; document.getElementById('error2').style.display = 'block'; }
+}
+
+async function showDashboard() {
+  const res = await fetch(API + '/dashboard', { headers: {'Authorization': 'Bearer ' + token} });
+  if (res.status === 401) { token = null; localStorage.removeItem('leadly_token'); render(); return; }
+  const data = await res.json();
+  document.getElementById('app').innerHTML = \`
+    <nav>
+      <div class="logo">Lead<span>ly</span></div>
+      <button class="logout" onclick="logout()">Sign out</button>
+    </nav>
+    <div class="container">
+      <div class="welcome">Welcome back, \${data.name} 👋</div>
+      <p class="subtitle">\${data.businessName}</p>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-num">\${data.leadCount}</div>
+          <div class="stat-label">Total leads captured</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">\${data.leads.length > 0 ? 'Active' : 'Waiting'}</div>
+          <div class="stat-label">Page status</div>
+        </div>
+      </div>
+      <div class="page-url">
+        <h3>Your lead capture page</h3>
+        <div class="url-box">
+          <div class="url-text">\${data.pageUrl}</div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('\${data.pageUrl}').then(()=>alert('Copied!'))">Copy</button>
+          <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
+        </div>
+      </div>
+      <div class="leads-section">
+        <h3>Recent leads</h3>
+        \${data.leads.length === 0 ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>' : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
+      </div>
+    </div>
+  \`;
+}
+
+function logout() { token = null; localStorage.removeItem('leadly_token'); render(); }
+render();
+</script>
+</body>
+</html>`;
+}
 
 async function fireWebhook(webhookUrl, lead) {
   if (!webhookUrl) return;
@@ -265,6 +468,83 @@ const server = createServer(async (req, res) => {
     }
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateLandingPage(biz));
+    return;
+  }
+
+
+  if (req.method === "POST" && req.url === "/signup") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { name, email, password, businessName } = JSON.parse(body);
+        const users = loadUsers();
+        if (users[email]) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Email already registered" }));
+          return;
+        }
+        const token = generateToken();
+        const slug = businessName ? businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : email.split('@')[0];
+        saveUser(email, { name, email, password: hashPassword(password), token, businessName, slug, createdAt: new Date().toISOString() });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, token, slug }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/login") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { email, password } = JSON.parse(body);
+        const users = loadUsers();
+        const user = users[email];
+        if (!user || user.password !== hashPassword(password)) {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Invalid email or password" }));
+          return;
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, token: user.token, slug: user.slug, name: user.name }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === "GET" && req.url.startsWith("/dashboard")) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = getUserFromToken(token);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+    const allLeads = loadCapturedLeads();
+    const myLeads = allLeads.filter(l => l.business === user.businessName || l.businessSlug === user.slug);
+    const pageUrl = `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ 
+      name: user.name,
+      businessName: user.businessName,
+      pageUrl,
+      leadCount: myLeads.length,
+      leads: myLeads.slice(-20).reverse()
+    }));
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/dashboard-page") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(generateDashboardPage());
     return;
   }
 

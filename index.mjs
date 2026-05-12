@@ -520,7 +520,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && req.url.startsWith("/dashboard")) {
+  if (req.method === "GET" && req.url.startsWith("/dashboard") && req.url !== "/dashboard-page") {
     const token = req.headers.authorization?.replace("Bearer ", "");
     const user = getUserFromToken(token);
     if (!user) {

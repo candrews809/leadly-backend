@@ -4,5 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.mjs"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
   }
 }

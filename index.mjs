@@ -484,6 +484,10 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
+    // Re-sync token if missing
+    if (!user.token) {
+      await usersCollection.updateOne({ email: user.email }, { $set: { token } });
+    }
     const myLeads = await leadsCollection
       .find({ $or: [{ business: user.businessName }, { businessSlug: user.slug }] })
       .sort({ timestamp: -1 })

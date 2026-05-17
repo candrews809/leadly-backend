@@ -489,7 +489,7 @@ const server = createServer(async (req, res) => {
       await usersCollection.updateOne({ email: user.email }, { $set: { token } });
     }
     const myLeads = await leadsCollection
-      .find({ $or: [{ business: user.businessName }, { businessSlug: user.slug }] })
+      .find({})
       .sort({ timestamp: -1 })
       .limit(20)
       .toArray();

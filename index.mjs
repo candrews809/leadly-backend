@@ -586,7 +586,23 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ status: "ok", service: "Leadly Lead API", db: "MongoDB" }));
     return;
   }
-
+// POST /update-business
+if (req.method === "POST" && req.url === "/update-business") {
+  let body = "";
+  req.on("data", chunk => body += chunk);
+  req.on("end", async () => {
+    try {
+      const { slug, webhookUrl } = JSON.parse(body);
+      await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+  return;
+}
   res.writeHead(404);
   res.end("Not found");
 });

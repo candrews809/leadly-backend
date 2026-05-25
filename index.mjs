@@ -338,9 +338,12 @@ async function showDashboard() {
   if (res.status === 401) { token = null; localStorage.removeItem('leadly_token'); render(); return; }
   const data = await res.json();
   document.getElementById('app').innerHTML = \`
-    <nav>
+<nav>
       <div class="logo">Lead<span>ly</span></div>
-      <button class="logout" onclick="logout()">Sign out</button>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
+        <button class="logout" onclick="logout()">Sign out</button>
+      </div>
     </nav>
     <div class="container">
       <div class="welcome">Welcome back, \${data.name} 👋</div>
@@ -368,13 +371,7 @@ async function showDashboard() {
         \${data.leads.length === 0
           ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
           : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
-      <div class="page-url" style="margin-top:24px">
-  <h3>💳 Subscription</h3>
-  <p style="color:#888;font-size:14px;margin:8px 0 16px">Manage your plan, update payment details, or cancel your subscription.</p>
-  <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd7S00" target="_blank">
-    <button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Manage Subscription →</button>
-  </a>
-</div>
+    
       </div><div class="page-url" style="margin-top:24px">
   <h3>⚡ Integrations</h3>
   <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>

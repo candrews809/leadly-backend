@@ -368,11 +368,32 @@ async function showDashboard() {
         \${data.leads.length === 0
           ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
           : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
-      </div>
+      </div><div class="page-url" style="margin-top:24px">
+  <h3>⚡ Integrations</h3>
+  <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
+  <div class="url-box">
+    <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
+    <button class="copy-btn" onclick="saveWebhook()">Save</button>
+  </div>
+  <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
+</div>
     </div>
   \`;
 }
-
+async function saveWebhook() {
+  const webhookUrl = document.getElementById('webhookInput').value;
+  if (!webhookUrl) { alert('Please enter a webhook URL'); return; }
+  const res = await fetch(API + '/save-webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ webhookUrl })
+  });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById('webhookStatus').style.display = 'block';
+    setTimeout(() => document.getElementById('webhookStatus').style.display = 'none', 3000);
+  }
+}
 function logout() { token = null; localStorage.removeItem('leadly_token'); render(); }
 render();
 </script>
@@ -594,6 +615,33 @@ if (req.method === "POST" && req.url === "/update-business") {
     try {
       const { slug, webhookUrl } = JSON.parse(body);
       await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+  return;
+}
+  // POST /save-webhook
+if (req.method === "POST" && req.url === "/save-webhook") {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = await getUserFromToken(token);
+  if (!user) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Unauthorized" }));
+    return;
+  }
+  let body = "";
+  req.on("data", chunk => body += chunk);
+  req.on("end", async () => {
+    try {
+      const { webhookUrl } = JSON.parse(body);
+      await businessesCollection.updateOne(
+        { slug: user.slug },
+        { $set: { webhookUrl } }
+      );
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
     } catch (err) {

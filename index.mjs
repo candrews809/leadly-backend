@@ -6,6 +6,7 @@ import { MongoClient } from "mongodb";
 const MONGODB_URI = process.env.MONGODB_URI;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const NOTIFY_EMAIL = "sfgiants4cole@gmail.com";
 const PORT = process.env.PORT || 3000;
 
@@ -265,6 +266,28 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .tab { display: flex; gap: 12px; margin-bottom: 24px; }
 .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 14px; }
 .tab-btn.active { background: #00e87a; color: #000; border-color: #00e87a; font-weight: 600; }
+/* Find Leads styles */
+.find-leads-section { margin-top: 8px; }
+.search-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.search-bar input { flex: 1; min-width: 160px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 15px; outline: none; margin-bottom: 0; }
+.search-bar input:focus { border-color: rgba(0,232,122,0.4); }
+.search-btn { background: #00e87a; color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; white-space: nowrap; font-size: 15px; }
+.search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.result-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.result-info { flex: 1; }
+.result-name { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.result-address { color: #888; font-size: 13px; margin-bottom: 8px; }
+.result-meta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.result-meta a { color: #00e87a; font-size: 13px; text-decoration: none; }
+.result-meta a:hover { text-decoration: underline; }
+.result-meta span { color: #666; font-size: 13px; }
+.save-lead-btn { background: transparent; border: 1px solid #00e87a; color: #00e87a; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; font-weight: 600; transition: all .2s; }
+.save-lead-btn:hover { background: #00e87a; color: #000; }
+.save-lead-btn.saved { background: #00e87a; color: #000; cursor: default; }
+.results-header { color: #888; font-size: 13px; margin-bottom: 16px; }
+.nav-link { color: #888; font-size: 14px; text-decoration: none; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: color .2s; }
+.nav-link:hover { color: #fff; }
+.nav-link.active { color: #00e87a; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -339,51 +362,164 @@ async function showDashboard() {
   const data = await res.json();
   document.getElementById('app').innerHTML = \`
 <nav>
-      <div class="logo">Lead<span>ly</span></div>
-      <div style="display:flex;gap:16px;align-items:center;">
-        <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
-        <button class="logout" onclick="logout()">Sign out</button>
-      </div>
-    </nav>
-    <div class="container">
-      <div class="welcome">Welcome back, \${data.name} 👋</div>
-      <p class="subtitle">\${data.businessName}</p>
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-num">\${data.leadCount}</div>
-          <div class="stat-label">Total leads captured</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num">\${data.leads.length > 0 ? 'Active' : 'Waiting'}</div>
-          <div class="stat-label">Page status</div>
-        </div>
-      </div>
-      <div class="page-url">
-        <h3>Your lead capture page</h3>
-        <div class="url-box">
-          <div class="url-text">\${data.pageUrl}</div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('\${data.pageUrl}').then(()=>alert('Copied!'))">Copy</button>
-          <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
-        </div>
-      </div>
-      <div class="leads-section">
-        <h3>Recent leads</h3>
-        \${data.leads.length === 0
-          ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
-          : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
-    
-      </div><div class="page-url" style="margin-top:24px">
-  <h3>⚡ Integrations</h3>
-  <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
-  <div class="url-box">
-    <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
-    <button class="copy-btn" onclick="saveWebhook()">Save</button>
+  <div class="logo">Lead<span>ly</span></div>
+  <div style="display:flex;gap:20px;align-items:center;">
+    <button class="nav-link active" id="nav-leads" onclick="showSection('leads')">My Leads</button>
+    <button class="nav-link" id="nav-find" onclick="showSection('find')">🔍 Find Leads</button>
+    <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
+    <button class="logout" onclick="logout()">Sign out</button>
   </div>
-  <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
-</div>
+</nav>
+<div class="container">
+
+  <!-- MY LEADS SECTION -->
+  <div id="section-leads">
+    <div class="welcome">Welcome back, \${data.name} 👋</div>
+    <p class="subtitle">\${data.businessName}</p>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-num">\${data.leadCount}</div>
+        <div class="stat-label">Total leads captured</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">\${data.leads.length > 0 ? 'Active' : 'Waiting'}</div>
+        <div class="stat-label">Page status</div>
+      </div>
     </div>
+    <div class="page-url">
+      <h3>Your lead capture page</h3>
+      <div class="url-box">
+        <div class="url-text">\${data.pageUrl}</div>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('\${data.pageUrl}').then(()=>alert('Copied!'))">Copy</button>
+        <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
+      </div>
+    </div>
+    <div class="leads-section">
+      <h3>Recent leads</h3>
+      \${data.leads.length === 0
+        ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
+        : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
+    </div>
+    <div class="page-url" style="margin-top:24px">
+      <h3>⚡ Integrations</h3>
+      <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
+      <div class="url-box">
+        <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
+        <button class="copy-btn" onclick="saveWebhook()">Save</button>
+      </div>
+      <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
+    </div>
+  </div>
+
+  <!-- FIND LEADS SECTION -->
+  <div id="section-find" style="display:none">
+    <div class="welcome">Find Leads 🔍</div>
+    <p class="subtitle" style="margin-bottom:32px">Search for local businesses — powered by Google Maps</p>
+    <div class="find-leads-section">
+      <div class="search-bar">
+        <input type="text" id="search-query" placeholder="Business type (e.g. auto repair, dentist, HVAC)">
+        <input type="text" id="search-location" placeholder="City or zip (e.g. Austin TX)">
+        <button class="search-btn" id="search-btn" onclick="searchLeads()">Search</button>
+      </div>
+      <div class="results-header" id="results-header" style="display:none"></div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+</div>
   \`;
 }
+
+function showSection(section) {
+  document.getElementById('section-leads').style.display = section === 'leads' ? 'block' : 'none';
+  document.getElementById('section-find').style.display = section === 'find' ? 'block' : 'none';
+  document.getElementById('nav-leads').classList.toggle('active', section === 'leads');
+  document.getElementById('nav-find').classList.toggle('active', section === 'find');
+}
+
+async function searchLeads() {
+  const query = document.getElementById('search-query').value.trim();
+  const location = document.getElementById('search-location').value.trim();
+  if (!query || !location) { alert('Enter a business type and location'); return; }
+
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true; btn.textContent = 'Searching...';
+  document.getElementById('search-results').innerHTML = '<p style="color:#888;text-align:center;padding:60px 0">Searching Google Maps...</p>';
+  document.getElementById('results-header').style.display = 'none';
+
+  try {
+    const res = await fetch(API + '/search-leads?query=' + encodeURIComponent(query) + '&location=' + encodeURIComponent(location), {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('search-results').innerHTML = '<p style="color:#ff4444;text-align:center;padding:40px 0">Error: ' + data.error + '</p>';
+      return;
+    }
+
+    document.getElementById('results-header').textContent = data.results.length + ' businesses found';
+    document.getElementById('results-header').style.display = 'block';
+
+    if (data.results.length === 0) {
+      document.getElementById('search-results').innerHTML = '<div class="empty">No results found. Try a different search.</div>';
+      return;
+    }
+
+    document.getElementById('search-results').innerHTML = data.results.map((r, i) => \`
+      <div class="result-card" id="result-\${i}">
+        <div class="result-info">
+          <div class="result-name">\${r.name}</div>
+          <div class="result-address">📍 \${r.address}</div>
+          <div class="result-meta">
+            \${r.phone ? '<span>📞 ' + r.phone + '</span>' : '<span style="color:#444">No phone listed</span>'}
+            \${r.website ? '<a href="' + r.website + '" target="_blank">🌐 Website</a>' : ''}
+            \${r.rating ? '<span>⭐ ' + r.rating + ' (' + r.totalRatings + ' reviews)</span>' : ''}
+          </div>
+        </div>
+        <button class="save-lead-btn" id="save-btn-\${i}" onclick="saveFindLead(\${i}, this)">Save Lead</button>
+      </div>
+    \`).join('');
+
+    // Store results for save function
+    window._searchResults = data.results;
+
+  } catch(err) {
+    document.getElementById('search-results').innerHTML = '<p style="color:#ff4444;text-align:center;padding:40px 0">Error: ' + err.message + '</p>';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Search';
+  }
+}
+
+async function saveFindLead(i, btn) {
+  const r = window._searchResults[i];
+  btn.disabled = true; btn.textContent = 'Saving...';
+  try {
+    const res = await fetch(API + '/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        name: r.name,
+        email: '',
+        phone: r.phone || '',
+        message: r.address,
+        business: r.name,
+        url: r.website || '',
+        source: 'Google Maps Search'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      btn.textContent = '✓ Saved';
+      btn.classList.add('saved');
+    } else {
+      btn.disabled = false; btn.textContent = 'Save Lead';
+    }
+  } catch(err) {
+    btn.disabled = false; btn.textContent = 'Save Lead';
+  }
+}
+
 async function saveWebhook() {
   const webhookUrl = document.getElementById('webhookInput').value;
   if (!webhookUrl) { alert('Please enter a webhook URL'); return; }
@@ -398,6 +534,7 @@ async function saveWebhook() {
     setTimeout(() => document.getElementById('webhookStatus').style.display = 'none', 3000);
   }
 }
+
 function logout() { token = null; localStorage.removeItem('leadly_token'); render(); }
 render();
 </script>
@@ -425,18 +562,11 @@ const server = createServer(async (req, res) => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date().toISOString() };
         console.log("📥 New lead received:", lead);
-
-        // Save to MongoDB
         await leadsCollection.insertOne(lead);
         console.log("✅ Lead saved to MongoDB");
-
-        // Send email notification
         await sendLeadEmail(lead);
-
-        // Fire webhook if business has one
         const biz = await businessesCollection.findOne({ businessName: lead.business });
         if (biz?.webhookUrl) await fireWebhook(biz.webhookUrl, lead);
-
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, message: "Lead captured!" }));
       } catch (err) {
@@ -510,7 +640,6 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
-    // Re-sync token if missing
     if (!user.token) {
       await usersCollection.updateOne({ email: user.email }, { $set: { token } });
     }
@@ -529,6 +658,73 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateDashboardPage());
+    return;
+  }
+
+  // GET /search-leads?query=auto+repair&location=Austin+TX
+  if (req.method === "GET" && req.url.startsWith("/search-leads")) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(token);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+
+    const urlParams = new URL(req.url, "http://localhost");
+    const query = urlParams.searchParams.get("query") || "";
+    const location = urlParams.searchParams.get("location") || "";
+
+    // Plan caps: free/starter=10, pro=50, agency=100
+    const plan = user.plan || "free";
+    const caps = { free: 10, starter: 10, pro: 50, agency: 100 };
+    const maxResults = caps[plan] || 10;
+
+    try {
+      const searchQuery = encodeURIComponent(`${query} in ${location}`);
+      const placesRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${GOOGLE_PLACES_API_KEY}`
+      );
+      const placesData = await placesRes.json();
+
+      if (placesData.status === "REQUEST_DENIED") {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Google Places API key error: " + placesData.error_message }));
+        return;
+      }
+
+      const results = (placesData.results || []).slice(0, maxResults).map(p => ({
+        name: p.name,
+        address: p.formatted_address,
+        rating: p.rating || null,
+        totalRatings: p.user_ratings_total || 0,
+        placeId: p.place_id,
+        types: p.types || [],
+      }));
+
+      // Fetch phone + website details for each result
+      const detailed = await Promise.all(results.map(async (r) => {
+        try {
+          const detailRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${r.placeId}&fields=formatted_phone_number,website&key=${GOOGLE_PLACES_API_KEY}`
+          );
+          const detailData = await detailRes.json();
+          return {
+            ...r,
+            phone: detailData.result?.formatted_phone_number || null,
+            website: detailData.result?.website || null,
+          };
+        } catch {
+          return r;
+        }
+      }));
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ results: detailed, plan, maxResults }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 
@@ -584,7 +780,7 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // GET /init-business (fixes existing accounts with no business page)
+  // GET /init-business
   if (req.method === "GET" && req.url.startsWith("/init-business/")) {
     const slug = req.url.replace("/init-business/", "");
     const user = await usersCollection.findOne({ slug });
@@ -611,50 +807,53 @@ const server = createServer(async (req, res) => {
     res.end(JSON.stringify({ status: "ok", service: "Leadly Lead API", db: "MongoDB" }));
     return;
   }
-// POST /update-business
-if (req.method === "POST" && req.url === "/update-business") {
-  let body = "";
-  req.on("data", chunk => body += chunk);
-  req.on("end", async () => {
-    try {
-      const { slug, webhookUrl } = JSON.parse(body);
-      await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
-  return;
-}
-  // POST /save-webhook
-if (req.method === "POST" && req.url === "/save-webhook") {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  const user = await getUserFromToken(token);
-  if (!user) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Unauthorized" }));
+
+  // POST /update-business
+  if (req.method === "POST" && req.url === "/update-business") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { slug, webhookUrl } = JSON.parse(body);
+        await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
-  let body = "";
-  req.on("data", chunk => body += chunk);
-  req.on("end", async () => {
-    try {
-      const { webhookUrl } = JSON.parse(body);
-      await businessesCollection.updateOne(
-        { slug: user.slug },
-        { $set: { webhookUrl } }
-      );
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err.message }));
+
+  // POST /save-webhook
+  if (req.method === "POST" && req.url === "/save-webhook") {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(token);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
     }
-  });
-  return;
-}
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { webhookUrl } = JSON.parse(body);
+        await businessesCollection.updateOne(
+          { slug: user.slug },
+          { $set: { webhookUrl } }
+        );
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end("Not found");
 });

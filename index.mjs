@@ -368,7 +368,8 @@ async function showDashboard() {
   <div class="logo">Lead<span>ly</span></div>
   <div style="display:flex;gap:20px;align-items:center;">
     <button class="nav-link active" id="nav-leads" onclick="showSection('leads')">My Leads</button>
-    <button class="nav-link" id="nav-find" onclick="showSection('find')">🔍 Find Leads</button>
+    <button class="nav-link" id="nav-find" onclick="showSection('find')">Find Leads</button>
+    <button class="nav-link" id="nav-integrations" onclick="showSection('integrations')">Integrations</button>
     <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
     <button class="logout" onclick="logout()">Sign out</button>
   </div>
@@ -403,44 +404,29 @@ async function showDashboard() {
         ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
         : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
     </div>
-    <div class="page-url" style="margin-top:24px">
-      <h3>⚡ Integrations</h3>
-      <p style="color:#888;font-size:14px;margin:8px 0 20px">Connect your CRM — every new lead will be sent there automatically.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px">
-        <button class="crm-btn" id="crm-salesforce" onclick="selectCRM('salesforce')">
-          <span style="font-size:22px">☁️</span>
-          <span>Salesforce</span>
-        </button>
-        <button class="crm-btn" id="crm-hubspot" onclick="selectCRM('hubspot')">
-          <span style="font-size:22px">🟠</span>
-          <span>HubSpot</span>
-        </button>
-        <button class="crm-btn" id="crm-ghl" onclick="selectCRM('ghl')">
-          <span style="font-size:22px">⚡</span>
-          <span>GoHighLevel</span>
-        </button>
-        <button class="crm-btn" id="crm-zapier" onclick="selectCRM('zapier')">
-          <span style="font-size:22px">🔗</span>
-          <span>Zapier</span>
-        </button>
-        <button class="crm-btn" id="crm-custom" onclick="selectCRM('custom')">
-          <span style="font-size:22px">🛠️</span>
-          <span>Custom</span>
-        </button>
-      </div>
-
-      <div id="crm-instructions" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px">
-        <p id="crm-instruction-text" style="color:#aaa;font-size:13px;line-height:1.6;margin-bottom:16px"></p>
-        <div class="url-box">
-          <input type="text" id="webhookInput" placeholder="Paste your webhook URL here..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
-          <button class="copy-btn" onclick="saveWebhook()">Save</button>
-        </div>
-        <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Connected!</p>
-      </div>
-    </div>
   </div>
 
-  <!-- FIND LEADS SECTION -->
+  <!-- INTEGRATIONS SECTION -->
+  <div id="section-integrations" style="display:none">
+    <div class="welcome">Integrations</div>
+    <p class="subtitle" style="margin-bottom:32px">Connect your CRM — every new lead will be sent there automatically.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px">
+      <button class="crm-btn" id="crm-salesforce" onclick="selectCRM('salesforce')">Salesforce</button>
+      <button class="crm-btn" id="crm-hubspot" onclick="selectCRM('hubspot')">HubSpot</button>
+      <button class="crm-btn" id="crm-ghl" onclick="selectCRM('ghl')">GoHighLevel</button>
+      <button class="crm-btn" id="crm-zapier" onclick="selectCRM('zapier')">Zapier</button>
+      <button class="crm-btn" id="crm-custom" onclick="selectCRM('custom')">Custom Webhook</button>
+    </div>
+    <div id="crm-instructions" style="display:none;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px">
+      <h3 id="crm-title" style="font-family:'Syne',sans-serif;font-size:18px;margin-bottom:12px"></h3>
+      <p id="crm-instruction-text" style="color:#aaa;font-size:14px;line-height:1.7;margin-bottom:20px"></p>
+      <div class="url-box">
+        <input type="text" id="webhookInput" placeholder="Paste your webhook URL here..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;margin-bottom:0">
+        <button class="copy-btn" onclick="saveWebhook()">Save</button>
+      </div>
+      <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:12px;display:none">✓ Connected!</p>
+    </div>
+  </div>
   <div id="section-find" style="display:none">
     <div class="welcome">Find Leads 🔍</div>
     <p class="subtitle" style="margin-bottom:32px">Search for local businesses — powered by Google Maps</p>
@@ -462,8 +448,10 @@ async function showDashboard() {
 function showSection(section) {
   document.getElementById('section-leads').style.display = section === 'leads' ? 'block' : 'none';
   document.getElementById('section-find').style.display = section === 'find' ? 'block' : 'none';
+  document.getElementById('section-integrations').style.display = section === 'integrations' ? 'block' : 'none';
   document.getElementById('nav-leads').classList.toggle('active', section === 'leads');
   document.getElementById('nav-find').classList.toggle('active', section === 'find');
+  document.getElementById('nav-integrations').classList.toggle('active', section === 'integrations');
 }
 
 async function searchLeads() {
@@ -581,6 +569,7 @@ function selectCRM(crm) {
   document.querySelectorAll('.crm-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('crm-' + crm).classList.add('active');
   const info = CRM_INFO[crm];
+  document.getElementById('crm-title').textContent = info.label;
   document.getElementById('crm-instruction-text').textContent = info.instructions;
   document.getElementById('webhookInput').placeholder = info.placeholder;
   document.getElementById('crm-instructions').style.display = 'block';

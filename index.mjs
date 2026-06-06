@@ -288,6 +288,9 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .nav-link { color: #888; font-size: 14px; text-decoration: none; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; transition: color .2s; }
 .nav-link:hover { color: #fff; }
 .nav-link.active { color: #00e87a; font-weight: 600; }
+.crm-btn { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; color: #ccc; font-size: 13px; font-weight: 600; transition: all .2s; font-family: inherit; }
+.crm-btn:hover { border-color: rgba(0,232,122,0.4); color: #fff; background: rgba(0,232,122,0.05); }
+.crm-btn.active { border-color: #00e87a; color: #00e87a; background: rgba(0,232,122,0.08); }
 </style>
 </head>
 <body>
@@ -402,12 +405,38 @@ async function showDashboard() {
     </div>
     <div class="page-url" style="margin-top:24px">
       <h3>⚡ Integrations</h3>
-      <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
-      <div class="url-box">
-        <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
-        <button class="copy-btn" onclick="saveWebhook()">Save</button>
+      <p style="color:#888;font-size:14px;margin:8px 0 20px">Connect your CRM — every new lead will be sent there automatically.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px">
+        <button class="crm-btn" id="crm-salesforce" onclick="selectCRM('salesforce')">
+          <span style="font-size:22px">☁️</span>
+          <span>Salesforce</span>
+        </button>
+        <button class="crm-btn" id="crm-hubspot" onclick="selectCRM('hubspot')">
+          <span style="font-size:22px">🟠</span>
+          <span>HubSpot</span>
+        </button>
+        <button class="crm-btn" id="crm-ghl" onclick="selectCRM('ghl')">
+          <span style="font-size:22px">⚡</span>
+          <span>GoHighLevel</span>
+        </button>
+        <button class="crm-btn" id="crm-zapier" onclick="selectCRM('zapier')">
+          <span style="font-size:22px">🔗</span>
+          <span>Zapier</span>
+        </button>
+        <button class="crm-btn" id="crm-custom" onclick="selectCRM('custom')">
+          <span style="font-size:22px">🛠️</span>
+          <span>Custom</span>
+        </button>
       </div>
-      <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
+
+      <div id="crm-instructions" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px">
+        <p id="crm-instruction-text" style="color:#aaa;font-size:13px;line-height:1.6;margin-bottom:16px"></p>
+        <div class="url-box">
+          <input type="text" id="webhookInput" placeholder="Paste your webhook URL here..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
+          <button class="copy-btn" onclick="saveWebhook()">Save</button>
+        </div>
+        <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Connected!</p>
+      </div>
     </div>
   </div>
 
@@ -518,6 +547,44 @@ async function saveFindLead(i, btn) {
   } catch(err) {
     btn.disabled = false; btn.textContent = 'Save Lead';
   }
+}
+
+const CRM_INFO = {
+  salesforce: {
+    label: 'Salesforce',
+    instructions: '1. In Salesforce, go to Setup → Workflow Rules or Flow Builder and create a new webhook action. Alternatively, use Zapier\'s Salesforce integration to get a webhook URL that pushes leads directly into Salesforce as new Leads. Paste the webhook URL below.',
+    placeholder: 'https://hooks.zapier.com/hooks/catch/... (Salesforce via Zapier)'
+  },
+  hubspot: {
+    label: 'HubSpot',
+    instructions: '1. In HubSpot, go to Settings → Integrations → Webhooks, or use Zapier\'s HubSpot integration. Create a webhook that creates a new Contact on trigger. Paste the webhook URL below.',
+    placeholder: 'https://hooks.zapier.com/hooks/catch/... (HubSpot via Zapier)'
+  },
+  ghl: {
+    label: 'GoHighLevel',
+    instructions: '1. In GoHighLevel, go to Settings → Integrations → Webhooks. Create a new inbound webhook and copy the URL. Every lead captured in Leadly will be sent there as a new contact.',
+    placeholder: 'https://services.leadconnectorhq.com/hooks/...'
+  },
+  zapier: {
+    label: 'Zapier',
+    instructions: '1. In Zapier, create a new Zap with "Webhooks by Zapier" as the trigger (Catch Hook). Copy the webhook URL Zapier gives you and paste it below. Then connect it to any app — Google Sheets, Slack, email, etc.',
+    placeholder: 'https://hooks.zapier.com/hooks/catch/...'
+  },
+  custom: {
+    label: 'Custom Webhook',
+    instructions: 'Paste any webhook URL below. Leadly will POST a JSON payload to it with every new lead: { name, email, phone, message, business, source, timestamp }.',
+    placeholder: 'https://your-server.com/webhook'
+  }
+};
+
+function selectCRM(crm) {
+  document.querySelectorAll('.crm-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('crm-' + crm).classList.add('active');
+  const info = CRM_INFO[crm];
+  document.getElementById('crm-instruction-text').textContent = info.instructions;
+  document.getElementById('webhookInput').placeholder = info.placeholder;
+  document.getElementById('crm-instructions').style.display = 'block';
+  document.getElementById('webhookStatus').style.display = 'none';
 }
 
 async function saveWebhook() {

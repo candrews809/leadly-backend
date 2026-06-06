@@ -551,29 +551,29 @@ async function saveFindLead(i, btn) {
 
 const CRM_INFO = {
   salesforce: {
-    label: 'Salesforce',
-    instructions: '1. In Salesforce, go to Setup → Workflow Rules or Flow Builder and create a new webhook action. Alternatively, use Zapier\'s Salesforce integration to get a webhook URL that pushes leads directly into Salesforce as new Leads. Paste the webhook URL below.',
-    placeholder: 'https://hooks.zapier.com/hooks/catch/... (Salesforce via Zapier)'
+    label: "Salesforce",
+    instructions: "In Salesforce, go to Setup and create a new webhook action via Flow Builder. Or use Zapier Salesforce integration to get a webhook URL that pushes leads directly into Salesforce as new Leads. Paste the webhook URL below.",
+    placeholder: "https://hooks.zapier.com/hooks/catch/... (Salesforce via Zapier)"
   },
   hubspot: {
-    label: 'HubSpot',
-    instructions: '1. In HubSpot, go to Settings → Integrations → Webhooks, or use Zapier\'s HubSpot integration. Create a webhook that creates a new Contact on trigger. Paste the webhook URL below.',
-    placeholder: 'https://hooks.zapier.com/hooks/catch/... (HubSpot via Zapier)'
+    label: "HubSpot",
+    instructions: "In HubSpot, go to Settings and use the Zapier HubSpot integration. Create a webhook that creates a new Contact on trigger. Paste the webhook URL below.",
+    placeholder: "https://hooks.zapier.com/hooks/catch/... (HubSpot via Zapier)"
   },
   ghl: {
-    label: 'GoHighLevel',
-    instructions: '1. In GoHighLevel, go to Settings → Integrations → Webhooks. Create a new inbound webhook and copy the URL. Every lead captured in Leadly will be sent there as a new contact.',
-    placeholder: 'https://services.leadconnectorhq.com/hooks/...'
+    label: "GoHighLevel",
+    instructions: "In GoHighLevel, go to Settings, then Integrations, then Webhooks. Create a new inbound webhook and copy the URL. Every lead captured in Leadly will be sent there as a new contact.",
+    placeholder: "https://services.leadconnectorhq.com/hooks/..."
   },
   zapier: {
-    label: 'Zapier',
-    instructions: '1. In Zapier, create a new Zap with "Webhooks by Zapier" as the trigger (Catch Hook). Copy the webhook URL Zapier gives you and paste it below. Then connect it to any app — Google Sheets, Slack, email, etc.',
-    placeholder: 'https://hooks.zapier.com/hooks/catch/...'
+    label: "Zapier",
+    instructions: "In Zapier, create a new Zap with Webhooks by Zapier as the trigger (Catch Hook). Copy the webhook URL Zapier gives you and paste it below. Then connect it to any app — Google Sheets, Slack, email, and more.",
+    placeholder: "https://hooks.zapier.com/hooks/catch/..."
   },
   custom: {
-    label: 'Custom Webhook',
-    instructions: 'Paste any webhook URL below. Leadly will POST a JSON payload to it with every new lead: { name, email, phone, message, business, source, timestamp }.',
-    placeholder: 'https://your-server.com/webhook'
+    label: "Custom Webhook",
+    instructions: "Paste any webhook URL below. Leadly will POST a JSON payload to it with every new lead: name, email, phone, message, business, source, and timestamp.",
+    placeholder: "https://your-server.com/webhook"
   }
 };
 

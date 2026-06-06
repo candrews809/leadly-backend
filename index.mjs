@@ -478,6 +478,13 @@ async function searchLeads() {
     document.getElementById('results-header').textContent = data.results.length + ' businesses found';
     document.getElementById('results-header').style.display = 'block';
 
+    if (data.hitCap) {
+      const upgrades = { free: 'Starter', starter: 'Pro', pro: 'Agency' };
+      const nextPlan = upgrades[data.plan] || 'Pro';
+      document.getElementById('results-header').innerHTML =
+        data.results.length + ' businesses found <span style="color:#ff9900;margin-left:8px">— You hit your ' + data.plan + ' plan limit of ' + data.maxResults + ' results. <a href="https://leadly-main.netlify.app/pricing" target="_blank" style="color:#00e87a;text-decoration:underline">Upgrade to ' + nextPlan + ' for more →</a></span>';
+    }
+
     if (data.results.length === 0) {
       document.getElementById('search-results').innerHTML = '<div class="empty">No results found. Try a different search.</div>';
       return;
@@ -731,10 +738,10 @@ const server = createServer(async (req, res) => {
     const query = urlParams.searchParams.get("query") || "";
     const location = urlParams.searchParams.get("location") || "";
 
-    // Plan caps: free/starter=10, pro=50, agency=100
+    // Plan caps
     const plan = user.plan || "free";
-    const caps = { free: 10, starter: 10, pro: 50, agency: 100 };
-    const maxResults = caps[plan] || 10;
+    const caps = { free: 50, starter: 150, pro: 250, agency: null };
+    const maxResults = caps[plan];
 
     try {
       const searchQuery = encodeURIComponent(`${query} in ${location}`);
@@ -749,7 +756,11 @@ const server = createServer(async (req, res) => {
         return;
       }
 
-      const results = (placesData.results || []).slice(0, maxResults).map(p => ({
+      const results = maxResults === null
+        ? (placesData.results || [])
+        : (placesData.results || []).slice(0, maxResults);
+
+      const mapped = results.map(p => ({
         name: p.name,
         address: p.formatted_address,
         rating: p.rating || null,
@@ -759,7 +770,7 @@ const server = createServer(async (req, res) => {
       }));
 
       // Fetch phone + website details for each result
-      const detailed = await Promise.all(results.map(async (r) => {
+      const detailed = await Promise.all(mapped.map(async (r) => {
         try {
           const detailRes = await fetch(
             `https://maps.googleapis.com/maps/api/place/details/json?place_id=${r.placeId}&fields=formatted_phone_number,website&key=${GOOGLE_PLACES_API_KEY}`
@@ -775,8 +786,12 @@ const server = createServer(async (req, res) => {
         }
       }));
 
+      // Check if user hit their cap
+      const totalAvailable = (placesData.results || []).length;
+      const hitCap = maxResults !== null && totalAvailable > maxResults;
+
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ results: detailed, plan, maxResults }));
+      res.end(JSON.stringify({ results: detailed, plan, maxResults, hitCap }));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: err.message }));

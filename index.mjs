@@ -365,7 +365,7 @@ async function showDashboard() {
   const data = await res.json();
   document.getElementById('app').innerHTML = \`
 <nav>
-  <a href="https://leadly-main.netlify.app" style="text-decoration:none;"><div class="logo">Lead<span>ly</span></div></a>
+  <a href="https://leadly-main.netlify.app" style="text-decoration:none;color:inherit;"><div class="logo">Lead<span>ly</span></div></a>
   <div style="display:flex;gap:20px;align-items:center;">
     <button class="nav-link active" id="nav-leads" onclick="showSection('leads')">My Leads</button>
     <button class="nav-link" id="nav-find" onclick="showSection('find')">Find Leads</button>

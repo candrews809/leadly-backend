@@ -15,7 +15,6 @@ const PRICE_IDS = {
   agency: 'price_1TTCEQD9M5I52vZq9BSth9uA',
 };
 
-// MongoDB setup
 const client = new MongoClient(MONGODB_URI);
 await client.connect();
 console.log("✅ Connected to MongoDB");
@@ -24,88 +23,31 @@ const leadsCollection = db.collection("leads");
 const usersCollection = db.collection("users");
 const businessesCollection = db.collection("businesses");
 
-// Auth helpers
 function hashPassword(password) {
   return createHmac('sha256', 'leadly-secret').update(password).digest('hex');
 }
-
 function generateToken() {
   return randomBytes(32).toString('hex');
 }
-
 async function getUserFromToken(token) {
   return await usersCollection.findOne({ token });
 }
-
 function generateSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-// Send email via Resend
 async function sendLeadEmail(lead) {
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-    },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
     body: JSON.stringify({
       from: "Leadly <onboarding@resend.dev>",
       to: NOTIFY_EMAIL,
       subject: `🎯 New Lead: ${lead.name} from ${lead.business || "Unknown Business"}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-          <div style="background: #00e87a; padding: 20px; border-radius: 12px 12px 0 0;">
-            <h1 style="color: #080808; margin: 0; font-size: 24px;">🎯 New Lead Captured!</h1>
-          </div>
-          <div style="background: #f5f5f5; padding: 24px; border-radius: 0 0 12px 12px;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr style="border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px 0; color: #666; width: 140px;">Name</td>
-                <td style="padding: 12px 0; font-weight: 600;">${lead.name || "Not provided"}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px 0; color: #666;">Email</td>
-                <td style="padding: 12px 0; font-weight: 600;">
-                  <a href="mailto:${lead.email}" style="color: #00b85f;">${lead.email || "Not provided"}</a>
-                </td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px 0; color: #666;">Phone</td>
-                <td style="padding: 12px 0; font-weight: 600;">${lead.phone || "Not provided"}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px 0; color: #666;">Business</td>
-                <td style="padding: 12px 0; font-weight: 600;">${lead.business || "Not provided"}</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #e0e0e0;">
-                <td style="padding: 12px 0; color: #666;">Message</td>
-                <td style="padding: 12px 0; font-weight: 600;">${lead.message || "Not provided"}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; color: #666;">Source</td>
-                <td style="padding: 12px 0; font-weight: 600;">${lead.url || "Leadly Widget"}</td>
-              </tr>
-            </table>
-            <div style="margin-top: 24px; padding: 16px; background: white; border-radius: 8px; border-left: 4px solid #00e87a;">
-              <p style="margin: 0; color: #666; font-size: 14px;">⏰ Captured: ${new Date(lead.timestamp).toLocaleString()}</p>
-            </div>
-            <div style="margin-top: 16px; text-align: center;">
-              <a href="mailto:${lead.email}" style="background: #00e87a; color: #080808; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Reply to ${lead.name || "Lead"} →
-              </a>
-            </div>
-          </div>
-          <p style="text-align: center; color: #aaa; font-size: 12px; margin-top: 16px;">
-            Powered by <a href="https://useleadly.io" style="color: #00e87a;">Leadly</a>
-          </p>
-        </div>
-      `,
+      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;"><div style="background:#00e87a;padding:20px;border-radius:12px 12px 0 0;"><h1 style="color:#080808;margin:0;font-size:24px;">🎯 New Lead Captured!</h1></div><div style="background:#f5f5f5;padding:24px;border-radius:0 0 12px 12px;"><table style="width:100%;border-collapse:collapse;"><tr style="border-bottom:1px solid #e0e0e0;"><td style="padding:12px 0;color:#666;width:140px;">Name</td><td style="padding:12px 0;font-weight:600;">${lead.name || "Not provided"}</td></tr><tr style="border-bottom:1px solid #e0e0e0;"><td style="padding:12px 0;color:#666;">Email</td><td style="padding:12px 0;font-weight:600;"><a href="mailto:${lead.email}" style="color:#00b85f;">${lead.email || "Not provided"}</a></td></tr><tr style="border-bottom:1px solid #e0e0e0;"><td style="padding:12px 0;color:#666;">Phone</td><td style="padding:12px 0;font-weight:600;">${lead.phone || "Not provided"}</td></tr><tr><td style="padding:12px 0;color:#666;">Source</td><td style="padding:12px 0;font-weight:600;">${lead.url || "Leadly Widget"}</td></tr></table><div style="margin-top:16px;text-align:center;"><a href="mailto:${lead.email}" style="background:#00e87a;color:#080808;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block;">Reply to ${lead.name || "Lead"} →</a></div></div></div>`,
     }),
   });
-  const data = await res.json();
-  console.log("Email sent:", data);
-  return data;
+  return res.json();
 }
 
 async function fireWebhook(webhookUrl, lead) {
@@ -114,40 +56,17 @@ async function fireWebhook(webhookUrl, lead) {
     await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone || '',
-        message: lead.message || '',
-        business: lead.business || '',
-        source: lead.url || 'Leadly',
-        timestamp: new Date().toISOString(),
-      }),
+      body: JSON.stringify({ name: lead.name, email: lead.email, phone: lead.phone || '', message: lead.message || '', business: lead.business || '', source: lead.url || 'Leadly', timestamp: new Date().toISOString() }),
     });
-    console.log('Webhook fired:', webhookUrl);
-  } catch (err) {
-    console.log('Webhook error:', err.message);
-  }
+  } catch (err) { console.log('Webhook error:', err.message); }
 }
 
 async function createCheckoutSession(plan, userEmail) {
   const priceId = PRICE_IDS[plan] || PRICE_IDS.starter;
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      'payment_method_types[]': 'card',
-      'mode': 'subscription',
-      'line_items[0][price]': priceId,
-      'line_items[0][quantity]': '1',
-      'subscription_data[trial_period_days]': '30',
-      ...(userEmail ? { 'customer_email': userEmail } : {}),
-      'success_url': 'https://useleadly.io?success=true',
-      'cancel_url': 'https://useleadly.io/pricing',
-    }),
+    headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ 'payment_method_types[]': 'card', 'mode': 'subscription', 'line_items[0][price]': priceId, 'line_items[0][quantity]': '1', 'subscription_data[trial_period_days]': '30', ...(userEmail ? { 'customer_email': userEmail } : {}), 'success_url': 'https://useleadly.io?success=true', 'cancel_url': 'https://useleadly.io/pricing' }),
   });
   return res.json();
 }
@@ -237,6 +156,7 @@ body { font-family: 'DM Sans', sans-serif; background: #080808; color: #f5f5f0; 
 nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
 .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: inherit; }
 .logo span { color: #00e87a; }
+.nav-link { color: #00e87a; font-size: 14px; text-decoration: none; cursor: pointer; background: none; border: none; font-family: inherit; }
 .logout { color: #888; cursor: pointer; font-size: 14px; background: none; border: none; }
 .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
 .welcome { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
@@ -266,10 +186,71 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .tab { display: flex; gap: 12px; margin-bottom: 24px; }
 .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 14px; }
 .tab-btn.active { background: #00e87a; color: #000; border-color: #00e87a; font-weight: 600; }
+/* Modal */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; width: 100%; max-width: 520px; position: relative; }
+.modal h2 { font-family: 'Syne', sans-serif; font-size: 22px; margin-bottom: 8px; }
+.modal p { color: #888; font-size: 14px; margin-bottom: 28px; }
+.modal-close { position: absolute; top: 16px; right: 20px; background: none; border: none; color: #888; font-size: 22px; cursor: pointer; }
+.integration-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.int-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; cursor: pointer; transition: all 0.15s; text-align: center; }
+.int-card:hover { border-color: #00e87a; background: rgba(0,232,122,0.05); }
+.int-card.selected { border-color: #00e87a; background: rgba(0,232,122,0.08); }
+.int-icon { font-size: 28px; margin-bottom: 8px; }
+.int-name { font-weight: 600; font-size: 14px; }
+.int-desc { color: #888; font-size: 12px; margin-top: 4px; }
+.webhook-input-section { display: none; margin-top: 16px; }
+.webhook-input-section.show { display: block; }
 </style>
 </head>
 <body>
 <div id="app"></div>
+
+<!-- Integrations Modal -->
+<div class="modal-overlay" id="integrationsModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeIntegrations()">✕</button>
+    <h2>⚡ Integrations</h2>
+    <p>Connect Leadly to your CRM. Every new lead will be sent there automatically.</p>
+    <div class="integration-grid">
+      <div class="int-card" onclick="selectIntegration('salesforce')">
+        <div class="int-icon">☁️</div>
+        <div class="int-name">Salesforce</div>
+        <div class="int-desc">via Zapier webhook</div>
+      </div>
+      <div class="int-card" onclick="selectIntegration('hubspot')">
+        <div class="int-icon">🟠</div>
+        <div class="int-name">HubSpot</div>
+        <div class="int-desc">via Zapier webhook</div>
+      </div>
+      <div class="int-card" onclick="selectIntegration('ghl')">
+        <div class="int-icon">⚡</div>
+        <div class="int-name">GoHighLevel</div>
+        <div class="int-desc">via Zapier webhook</div>
+      </div>
+      <div class="int-card" onclick="selectIntegration('zapier')">
+        <div class="int-icon">🔗</div>
+        <div class="int-name">Zapier</div>
+        <div class="int-desc">Any Zapier workflow</div>
+      </div>
+      <div class="int-card" onclick="selectIntegration('custom')" style="grid-column: span 2;">
+        <div class="int-icon">🛠️</div>
+        <div class="int-name">Custom Webhook</div>
+        <div class="int-desc">Send leads to any URL</div>
+      </div>
+    </div>
+    <div class="webhook-input-section" id="webhookInputSection">
+      <p id="webhookInstructions" style="color:#aaa;font-size:13px;margin-bottom:12px;"></p>
+      <div class="url-box">
+        <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;margin-bottom:0;">
+        <button class="copy-btn" onclick="saveWebhook()">Save</button>
+      </div>
+      <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Integration saved!</p>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = 'https://leadly-backend-tgbl.onrender.com';
 let token = localStorage.getItem('leadly_token');
@@ -344,7 +325,8 @@ async function showDashboard() {
     <nav>
       <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
       <div style="display:flex;gap:16px;align-items:center;">
-        <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
+        <button class="nav-link" onclick="openIntegrations()">⚡ Integrations</button>
+        <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" class="nav-link">Manage Subscription</a>
         <button class="logout" onclick="logout()">Sign out</button>
       </div>
     </nav>
@@ -373,15 +355,6 @@ async function showDashboard() {
           <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
         </div>
       </div>
-      <div class="page-url">
-        <h3>⚡ Integrations</h3>
-        <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
-        <div class="url-box">
-          <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
-          <button class="copy-btn" onclick="saveWebhook()">Save</button>
-        </div>
-        <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
-      </div>
       <div class="leads-section">
         <h3>Recent leads</h3>
         \${data.leads.length === 0
@@ -390,6 +363,32 @@ async function showDashboard() {
       </div>
     </div>
   \`;
+}
+
+function openIntegrations() {
+  document.getElementById('integrationsModal').classList.add('open');
+}
+
+function closeIntegrations() {
+  document.getElementById('integrationsModal').classList.remove('open');
+  document.querySelectorAll('.int-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('webhookInputSection').classList.remove('show');
+}
+
+const instructions = {
+  salesforce: 'Create a Zap in Zapier: Trigger = Webhooks by Zapier → Action = Salesforce. Paste the webhook URL below.',
+  hubspot: 'Create a Zap in Zapier: Trigger = Webhooks by Zapier → Action = HubSpot. Paste the webhook URL below.',
+  ghl: 'Create a Zap in Zapier: Trigger = Webhooks by Zapier → Action = GoHighLevel. Paste the webhook URL below.',
+  zapier: 'Create a Zap using "Webhooks by Zapier" as the trigger. Copy the webhook URL and paste it below.',
+  custom: 'Paste any webhook URL below. Leadly will POST lead data to it every time a new lead is captured.',
+};
+
+function selectIntegration(type) {
+  document.querySelectorAll('.int-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('webhookInstructions').textContent = instructions[type];
+  document.getElementById('webhookInputSection').classList.add('show');
+  document.getElementById('webhookInput').placeholder = 'Paste your webhook URL here...';
 }
 
 async function saveWebhook() {
@@ -403,7 +402,7 @@ async function saveWebhook() {
   const data = await res.json();
   if (data.success) {
     document.getElementById('webhookStatus').style.display = 'block';
-    setTimeout(() => document.getElementById('webhookStatus').style.display = 'none', 3000);
+    setTimeout(() => { document.getElementById('webhookStatus').style.display = 'none'; closeIntegrations(); }, 2000);
   }
 }
 
@@ -419,12 +418,7 @@ const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
+  if (req.method === "OPTIONS") { res.writeHead(200); res.end(); return; }
 
   if (req.method === "POST" && req.url === "/leads") {
     let body = "";
@@ -432,16 +426,13 @@ const server = createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date().toISOString() };
-        console.log("📥 New lead received:", lead);
         await leadsCollection.insertOne(lead);
-        console.log("✅ Lead saved to MongoDB");
         await sendLeadEmail(lead);
         const biz = await businessesCollection.findOne({ businessName: lead.business });
         if (biz?.webhookUrl) await fireWebhook(biz.webhookUrl, lead);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, message: "Lead captured!" }));
       } catch (err) {
-        console.error("Error:", err.message);
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: false, error: err.message }));
       }
@@ -456,24 +447,15 @@ const server = createServer(async (req, res) => {
       try {
         const { name, email, password, businessName } = JSON.parse(body);
         const existing = await usersCollection.findOne({ email });
-        if (existing) {
-          res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Email already registered" }));
-          return;
-        }
+        if (existing) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Email already registered" })); return; }
         const token = generateToken();
         const slug = businessName ? generateSlug(businessName) : email.split('@')[0];
         await usersCollection.insertOne({ name, email, password: hashPassword(password), token, businessName, slug, createdAt: new Date().toISOString() });
         const existingBiz = await businessesCollection.findOne({ slug });
-        if (!existingBiz) {
-          await businessesCollection.insertOne({ businessName, slug, city: '', description: '', createdAt: new Date().toISOString() });
-        }
+        if (!existingBiz) await businessesCollection.insertOne({ businessName, slug, city: '', description: '', createdAt: new Date().toISOString() });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, token, slug }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }
@@ -485,17 +467,10 @@ const server = createServer(async (req, res) => {
       try {
         const { email, password } = JSON.parse(body);
         const user = await usersCollection.findOne({ email });
-        if (!user || user.password !== hashPassword(password)) {
-          res.writeHead(401, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Invalid email or password" }));
-          return;
-        }
+        if (!user || user.password !== hashPassword(password)) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid email or password" })); return; }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, token: user.token, slug: user.slug, name: user.name }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }
@@ -503,14 +478,7 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url.startsWith("/dashboard") && req.url !== "/dashboard-page") {
     const token = req.headers.authorization?.replace("Bearer ", "");
     const user = await getUserFromToken(token);
-    if (!user) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
-    }
-    if (!user.token) {
-      await usersCollection.updateOne({ email: user.email }, { $set: { token } });
-    }
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     const myLeads = await leadsCollection.find({}).sort({ timestamp: -1 }).limit(20).toArray();
     const pageUrl = `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`;
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -532,13 +500,9 @@ const server = createServer(async (req, res) => {
         const biz = JSON.parse(body);
         const slug = generateSlug(biz.businessName);
         await businessesCollection.insertOne({ ...biz, slug, createdAt: new Date().toISOString() });
-        const pageUrl = `https://leadly-backend-tgbl.onrender.com/page/${slug}`;
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, url: pageUrl, slug }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+        res.end(JSON.stringify({ success: true, url: `https://leadly-backend-tgbl.onrender.com/page/${slug}`, slug }));
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }
@@ -546,11 +510,7 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url.startsWith("/page/")) {
     const slug = req.url.replace("/page/", "");
     const biz = await businessesCollection.findOne({ slug });
-    if (!biz) {
-      res.writeHead(404);
-      res.end("Page not found");
-      return;
-    }
+    if (!biz) { res.writeHead(404); res.end("Page not found"); return; }
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateLandingPage(biz));
     return;
@@ -565,10 +525,7 @@ const server = createServer(async (req, res) => {
         const session = await createCheckoutSession(plan);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ url: session.url }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }
@@ -576,11 +533,7 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url.startsWith("/init-business/")) {
     const slug = req.url.replace("/init-business/", "");
     const user = await usersCollection.findOne({ slug });
-    if (!user) {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "User not found" }));
-      return;
-    }
+    if (!user) { res.writeHead(404, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "User not found" })); return; }
     const existingBiz = await businessesCollection.findOne({ slug });
     if (!existingBiz) {
       await businessesCollection.insertOne({ businessName: user.businessName, slug, city: "", description: "", createdAt: new Date().toISOString() });
@@ -608,10 +561,7 @@ const server = createServer(async (req, res) => {
         await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }
@@ -621,20 +571,9 @@ const server = createServer(async (req, res) => {
     req.on("data", chunk => body += chunk);
     req.on("end", async () => {
       try {
-        const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
         let event;
-        try {
-          event = JSON.parse(body);
-        } catch (err) {
-          res.writeHead(400);
-          res.end('Webhook parse error');
-          return;
-        }
-        const PRICE_TO_PLAN = {
-          'price_1TTCAsD9M5I52vZq3tu7za1b': 'starter',
-          'price_1TTCCyD9M5I52vZqYTNu6boC': 'pro',
-          'price_1TTCEQD9M5I52vZq9BSth9uA': 'agency',
-        };
+        try { event = JSON.parse(body); } catch (err) { res.writeHead(400); res.end('Webhook parse error'); return; }
+        const PRICE_TO_PLAN = { 'price_1TTCAsD9M5I52vZq3tu7za1b': 'starter', 'price_1TTCCyD9M5I52vZqYTNu6boC': 'pro', 'price_1TTCEQD9M5I52vZq9BSth9uA': 'agency' };
         const subscription = event.data?.object;
         if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
           const priceId = subscription?.items?.data?.[0]?.price?.id;
@@ -642,43 +581,21 @@ const server = createServer(async (req, res) => {
           const status = subscription?.status;
           const plan = PRICE_TO_PLAN[priceId] || 'free';
           const activePlan = (status === 'active' || status === 'trialing') ? plan : 'free';
-          if (customerId) {
-            const updated = await usersCollection.updateOne(
-              { stripeCustomerId: customerId },
-              { $set: { plan: activePlan, stripeSubscriptionStatus: status } }
-            );
-            console.log(`✅ Plan updated to ${activePlan} for customer ${customerId}, matched: ${updated.matchedCount}`);
-          }
+          if (customerId) await usersCollection.updateOne({ stripeCustomerId: customerId }, { $set: { plan: activePlan, stripeSubscriptionStatus: status } });
         }
         if (event.type === 'customer.subscription.deleted') {
           const customerId = subscription?.customer;
-          if (customerId) {
-            await usersCollection.updateOne(
-              { stripeCustomerId: customerId },
-              { $set: { plan: 'free', stripeSubscriptionStatus: 'canceled' } }
-            );
-            console.log(`✅ Plan reset to free for customer ${customerId}`);
-          }
+          if (customerId) await usersCollection.updateOne({ stripeCustomerId: customerId }, { $set: { plan: 'free', stripeSubscriptionStatus: 'canceled' } });
         }
         if (event.type === 'checkout.session.completed') {
           const session = event.data.object;
           const customerId = session.customer;
           const customerEmail = session.customer_details?.email || session.customer_email;
-          if (customerId && customerEmail) {
-            await usersCollection.updateOne(
-              { email: customerEmail },
-              { $set: { stripeCustomerId: customerId } }
-            );
-            console.log(`✅ Linked stripeCustomerId ${customerId} to ${customerEmail}`);
-          }
+          if (customerId && customerEmail) await usersCollection.updateOne({ email: customerEmail }, { $set: { stripeCustomerId: customerId } });
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ received: true }));
-      } catch (err) {
-        console.error('Webhook error:', err.message);
-        res.writeHead(500);
-        res.end('Webhook error');
-      }
+      } catch (err) { res.writeHead(500); res.end('Webhook error'); }
     });
     return;
   }
@@ -686,26 +603,16 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && req.url === "/save-webhook") {
     const token = req.headers.authorization?.replace("Bearer ", "");
     const user = await getUserFromToken(token);
-    if (!user) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
-    }
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     let body = "";
     req.on("data", chunk => body += chunk);
     req.on("end", async () => {
       try {
         const { webhookUrl } = JSON.parse(body);
-        await businessesCollection.updateOne(
-          { slug: user.slug },
-          { $set: { webhookUrl } }
-        );
+        await businessesCollection.updateOne({ slug: user.slug }, { $set: { webhookUrl } });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true }));
-      } catch (err) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+      } catch (err) { res.writeHead(500, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: err.message })); }
     });
     return;
   }

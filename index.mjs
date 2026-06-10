@@ -97,7 +97,7 @@ async function sendLeadEmail(lead) {
             </div>
           </div>
           <p style="text-align: center; color: #aaa; font-size: 12px; margin-top: 16px;">
-            Powered by <a href="https://leadly-main.netlify.app" style="color: #00e87a;">Leadly</a>
+            Powered by <a href="https://useleadly.io" style="color: #00e87a;">Leadly</a>
           </p>
         </div>
       `,
@@ -204,7 +204,7 @@ button:hover { background: #00c96a; }
     </div>
   </div>
 </div>
-<div class="footer">Powered by <a href="https://leadly-main.netlify.app">Leadly</a></div>
+<div class="footer">Powered by <a href="https://useleadly.io">Leadly</a></div>
 <script>
 async function submitLead() {
   const name = document.getElementById('name').value;
@@ -235,7 +235,7 @@ function generateDashboardPage() {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'DM Sans', sans-serif; background: #080808; color: #f5f5f0; min-height: 100vh; }
 nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
-.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; }
+.logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: inherit; }
 .logo span { color: #00e87a; }
 .logout { color: #888; cursor: pointer; font-size: 14px; background: none; border: none; }
 .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
@@ -245,7 +245,7 @@ nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); displ
 .stat-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; }
 .stat-num { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: #00e87a; }
 .stat-label { color: #888; font-size: 14px; margin-top: 4px; }
-.page-url { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 40px; }
+.page-url { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
 .page-url h3 { font-family: 'Syne', sans-serif; font-size: 16px; margin-bottom: 12px; }
 .url-box { display: flex; gap: 12px; align-items: center; }
 .url-text { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: #00e87a; font-size: 14px; word-break: break-all; }
@@ -280,7 +280,9 @@ function render() {
 
 function showLogin() {
   document.getElementById('app').innerHTML = \`
-    <nav><div class="logo">Lead<span>ly</span></div></nav>
+    <nav>
+      <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
+    </nav>
     <div class="container">
       <div class="login-box">
         <h2>Welcome back</h2>
@@ -339,8 +341,8 @@ async function showDashboard() {
   if (res.status === 401) { token = null; localStorage.removeItem('leadly_token'); render(); return; }
   const data = await res.json();
   document.getElementById('app').innerHTML = \`
-<nav>
-      <div class="logo">Lead<span>ly</span></div>
+    <nav>
+      <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
       <div style="display:flex;gap:16px;align-items:center;">
         <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" style="color:#00e87a;font-size:14px;text-decoration:none;">Manage Subscription</a>
         <button class="logout" onclick="logout()">Sign out</button>
@@ -371,24 +373,25 @@ async function showDashboard() {
           <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
         </div>
       </div>
+      <div class="page-url">
+        <h3>⚡ Integrations</h3>
+        <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
+        <div class="url-box">
+          <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
+          <button class="copy-btn" onclick="saveWebhook()">Save</button>
+        </div>
+        <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
+      </div>
       <div class="leads-section">
         <h3>Recent leads</h3>
         \${data.leads.length === 0
           ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
           : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
-    
-      </div><div class="page-url" style="margin-top:24px">
-  <h3>⚡ Integrations</h3>
-  <p style="color:#888;font-size:14px;margin:8px 0 16px">Connect your CRM via Zapier. Paste your Zapier webhook URL below and every new lead will be sent there automatically.</p>
-  <div class="url-box">
-    <input type="text" id="webhookInput" placeholder="https://hooks.zapier.com/hooks/catch/..." style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 14px;border-radius:8px;font-size:14px;">
-    <button class="copy-btn" onclick="saveWebhook()">Save</button>
-  </div>
-  <p id="webhookStatus" style="color:#00e87a;font-size:13px;margin-top:8px;display:none">✓ Webhook saved!</p>
-</div>
+      </div>
     </div>
   \`;
 }
+
 async function saveWebhook() {
   const webhookUrl = document.getElementById('webhookInput').value;
   if (!webhookUrl) { alert('Please enter a webhook URL'); return; }
@@ -403,6 +406,7 @@ async function saveWebhook() {
     setTimeout(() => document.getElementById('webhookStatus').style.display = 'none', 3000);
   }
 }
+
 function logout() { token = null; localStorage.removeItem('leadly_token'); render(); }
 render();
 </script>
@@ -422,7 +426,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /leads — capture a lead
   if (req.method === "POST" && req.url === "/leads") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -430,18 +433,11 @@ const server = createServer(async (req, res) => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date().toISOString() };
         console.log("📥 New lead received:", lead);
-
-        // Save to MongoDB
         await leadsCollection.insertOne(lead);
         console.log("✅ Lead saved to MongoDB");
-
-        // Send email notification
         await sendLeadEmail(lead);
-
-        // Fire webhook if business has one
         const biz = await businessesCollection.findOne({ businessName: lead.business });
         if (biz?.webhookUrl) await fireWebhook(biz.webhookUrl, lead);
-
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, message: "Lead captured!" }));
       } catch (err) {
@@ -453,7 +449,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /signup
   if (req.method === "POST" && req.url === "/signup") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -483,7 +478,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /login
   if (req.method === "POST" && req.url === "/login") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -506,7 +500,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // GET /dashboard (API)
   if (req.method === "GET" && req.url.startsWith("/dashboard") && req.url !== "/dashboard-page") {
     const token = req.headers.authorization?.replace("Bearer ", "");
     const user = await getUserFromToken(token);
@@ -515,29 +508,22 @@ const server = createServer(async (req, res) => {
       res.end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
-    // Re-sync token if missing
     if (!user.token) {
       await usersCollection.updateOne({ email: user.email }, { $set: { token } });
     }
-    const myLeads = await leadsCollection
-      .find({})
-      .sort({ timestamp: -1 })
-      .limit(20)
-      .toArray();
+    const myLeads = await leadsCollection.find({}).sort({ timestamp: -1 }).limit(20).toArray();
     const pageUrl = `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`;
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ name: user.name, businessName: user.businessName, pageUrl, leadCount: myLeads.length, leads: myLeads, plan: user.plan || 'free' }));
     return;
   }
 
-  // GET /dashboard-page (UI)
   if (req.method === "GET" && req.url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateDashboardPage());
     return;
   }
 
-  // POST /register-business
   if (req.method === "POST" && req.url === "/register-business") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -557,7 +543,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // GET /page/:slug
   if (req.method === "GET" && req.url.startsWith("/page/")) {
     const slug = req.url.replace("/page/", "");
     const biz = await businessesCollection.findOne({ slug });
@@ -571,7 +556,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // POST /checkout
   if (req.method === "POST" && req.url === "/checkout") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -589,7 +573,6 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // GET /init-business (fixes existing accounts with no business page)
   if (req.method === "GET" && req.url.startsWith("/init-business/")) {
     const slug = req.url.replace("/init-business/", "");
     const user = await usersCollection.findOne({ slug });
@@ -610,67 +593,56 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // GET /health
   if (req.method === "GET" && req.url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ status: "ok", service: "Leadly Lead API", db: "MongoDB" }));
     return;
   }
-// POST /update-business
-if (req.method === "POST" && req.url === "/update-business") {
-  let body = "";
-  req.on("data", chunk => body += chunk);
-  req.on("end", async () => {
-    try {
-      const { slug, webhookUrl } = JSON.parse(body);
-      await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
-  return;
-}
-  // POST /stripe-webhook — sync Stripe plan to MongoDB
+
+  if (req.method === "POST" && req.url === "/update-business") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { slug, webhookUrl } = JSON.parse(body);
+        await businessesCollection.updateOne({ slug }, { $set: { webhookUrl } });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/stripe-webhook") {
     let body = "";
     req.on("data", chunk => body += chunk);
     req.on("end", async () => {
       try {
         const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-        const sig = req.headers['stripe-signature'];
-
-        // Verify webhook signature
         let event;
         try {
-          const hmac = createHmac('sha256', STRIPE_WEBHOOK_SECRET);
-          // Simple verification — parse event directly
           event = JSON.parse(body);
         } catch (err) {
           res.writeHead(400);
           res.end('Webhook parse error');
           return;
         }
-
         const PRICE_TO_PLAN = {
           'price_1TTCAsD9M5I52vZq3tu7za1b': 'starter',
           'price_1TTCCyD9M5I52vZqYTNu6boC': 'pro',
           'price_1TTCEQD9M5I52vZq9BSth9uA': 'agency',
         };
-
         const subscription = event.data?.object;
-
         if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
           const priceId = subscription?.items?.data?.[0]?.price?.id;
           const customerId = subscription?.customer;
           const status = subscription?.status;
           const plan = PRICE_TO_PLAN[priceId] || 'free';
           const activePlan = (status === 'active' || status === 'trialing') ? plan : 'free';
-
           if (customerId) {
-            // Find user by stripeCustomerId or email via Stripe customer lookup
             const updated = await usersCollection.updateOne(
               { stripeCustomerId: customerId },
               { $set: { plan: activePlan, stripeSubscriptionStatus: status } }
@@ -678,7 +650,6 @@ if (req.method === "POST" && req.url === "/update-business") {
             console.log(`✅ Plan updated to ${activePlan} for customer ${customerId}, matched: ${updated.matchedCount}`);
           }
         }
-
         if (event.type === 'customer.subscription.deleted') {
           const customerId = subscription?.customer;
           if (customerId) {
@@ -689,8 +660,6 @@ if (req.method === "POST" && req.url === "/update-business") {
             console.log(`✅ Plan reset to free for customer ${customerId}`);
           }
         }
-
-        // Handle checkout.session.completed to link stripeCustomerId to user
         if (event.type === 'checkout.session.completed') {
           const session = event.data.object;
           const customerId = session.customer;
@@ -703,7 +672,6 @@ if (req.method === "POST" && req.url === "/update-business") {
             console.log(`✅ Linked stripeCustomerId ${customerId} to ${customerEmail}`);
           }
         }
-
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ received: true }));
       } catch (err) {
@@ -715,33 +683,33 @@ if (req.method === "POST" && req.url === "/update-business") {
     return;
   }
 
-
-if (req.method === "POST" && req.url === "/save-webhook") {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  const user = await getUserFromToken(token);
-  if (!user) {
-    res.writeHead(401, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Unauthorized" }));
+  if (req.method === "POST" && req.url === "/save-webhook") {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(token);
+    if (!user) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", async () => {
+      try {
+        const { webhookUrl } = JSON.parse(body);
+        await businessesCollection.updateOne(
+          { slug: user.slug },
+          { $set: { webhookUrl } }
+        );
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
-  let body = "";
-  req.on("data", chunk => body += chunk);
-  req.on("end", async () => {
-    try {
-      const { webhookUrl } = JSON.parse(body);
-      await businessesCollection.updateOne(
-        { slug: user.slug },
-        { $set: { webhookUrl } }
-      );
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: err.message }));
-    }
-  });
-  return;
-}
+
   res.writeHead(404);
   res.end("Not found");
 });

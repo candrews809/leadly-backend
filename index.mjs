@@ -197,7 +197,6 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .int-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 18px; cursor: pointer; transition: all 0.15s; text-align: center; }
 .int-card:hover { border-color: #00e87a; background: rgba(0,232,122,0.05); }
 .int-card.selected { border-color: #00e87a; background: rgba(0,232,122,0.08); }
-.int-icon { font-size: 28px; margin-bottom: 8px; }
 .int-name { font-weight: 600; font-size: 14px; }
 .int-desc { color: #888; font-size: 12px; margin-top: 4px; }
 .webhook-input-section { display: none; margin-top: 16px; }
@@ -211,31 +210,26 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 <div class="modal-overlay" id="integrationsModal">
   <div class="modal">
     <button class="modal-close" onclick="closeIntegrations()">✕</button>
-    <h2>⚡ Integrations</h2>
+    <h2>Integrations</h2>
     <p>Connect Leadly to your CRM. Every new lead will be sent there automatically.</p>
     <div class="integration-grid">
       <div class="int-card" onclick="selectIntegration('salesforce')">
-        <div class="int-icon">☁️</div>
         <div class="int-name">Salesforce</div>
         <div class="int-desc">via Zapier webhook</div>
       </div>
       <div class="int-card" onclick="selectIntegration('hubspot')">
-        <div class="int-icon">🟠</div>
         <div class="int-name">HubSpot</div>
         <div class="int-desc">via Zapier webhook</div>
       </div>
       <div class="int-card" onclick="selectIntegration('ghl')">
-        <div class="int-icon">⚡</div>
         <div class="int-name">GoHighLevel</div>
         <div class="int-desc">via Zapier webhook</div>
       </div>
       <div class="int-card" onclick="selectIntegration('zapier')">
-        <div class="int-icon">🔗</div>
         <div class="int-name">Zapier</div>
         <div class="int-desc">Any Zapier workflow</div>
       </div>
       <div class="int-card" onclick="selectIntegration('custom')" style="grid-column: span 2;">
-        <div class="int-icon">🛠️</div>
         <div class="int-name">Custom Webhook</div>
         <div class="int-desc">Send leads to any URL</div>
       </div>
@@ -325,7 +319,7 @@ async function showDashboard() {
     <nav>
       <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
       <div style="display:flex;gap:16px;align-items:center;">
-        <button class="nav-link" onclick="openIntegrations()">⚡ Integrations</button>
+        <button class="nav-link" onclick="openIntegrations()">Integrations</button>
         <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" class="nav-link">Manage Subscription</a>
         <button class="logout" onclick="logout()">Sign out</button>
       </div>

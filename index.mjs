@@ -6,6 +6,7 @@ import { MongoClient } from "mongodb";
 const MONGODB_URI = process.env.MONGODB_URI;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 const NOTIFY_EMAIL = "sfgiants4cole@gmail.com";
 const PORT = process.env.PORT || 3000;
 
@@ -14,6 +15,8 @@ const PRICE_IDS = {
   pro: 'price_1TTCCyD9M5I52vZqYTNu6boC',
   agency: 'price_1TTCEQD9M5I52vZq9BSth9uA',
 };
+
+const PLAN_SEARCH_CAPS = { free: 50, starter: 150, pro: 250, agency: Infinity };
 
 const client = new MongoClient(MONGODB_URI);
 await client.connect();
@@ -170,7 +173,13 @@ nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); displ
 .url-box { display: flex; gap: 12px; align-items: center; }
 .url-text { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: #00e87a; font-size: 14px; word-break: break-all; }
 .copy-btn { background: #00e87a; color: #000; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-.leads-section h3 { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 16px; }
+/* Tabs */
+.section-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.section-tab { padding: 12px 24px; background: none; border: none; color: #888; font-size: 15px; cursor: pointer; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.section-tab.active { color: #00e87a; border-bottom-color: #00e87a; font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* My Leads */
 .leads-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .search-input { flex: 1; min-width: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
 .search-input:focus { border-color: rgba(0,232,122,0.4); }
@@ -183,6 +192,27 @@ nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); displ
 .lead-time { color: #666; font-size: 12px; }
 .lead-source { color: #666; font-size: 12px; margin-top: 4px; }
 .empty { text-align: center; padding: 60px; color: #666; }
+/* Find Leads */
+.find-leads-form { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+.find-leads-form h3 { font-family: 'Syne', sans-serif; font-size: 18px; margin-bottom: 6px; }
+.find-leads-form p { color: #888; font-size: 14px; margin-bottom: 20px; }
+.find-leads-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.find-leads-row input { flex: 1; min-width: 180px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; margin-bottom: 0; }
+.find-leads-row input:focus { border-color: rgba(0,232,122,0.4); }
+.find-leads-row input::placeholder { color: #666; }
+.search-btn { background: #00e87a; color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.prospect-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.prospect-info .prospect-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.prospect-info .prospect-address { color: #888; font-size: 13px; margin-bottom: 4px; }
+.prospect-info .prospect-phone { color: #00e87a; font-size: 13px; margin-bottom: 4px; }
+.prospect-info .prospect-rating { color: #888; font-size: 12px; }
+.prospect-actions { display: flex; flex-direction: column; gap: 8px; }
+.save-lead-btn { background: #00e87a; color: #000; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.save-lead-btn.saved { background: #1a1a1a; color: #00e87a; border: 1px solid #00e87a; cursor: default; }
+.website-btn { background: transparent; color: #888; border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: inline-block; text-align: center; }
+.cap-notice { background: rgba(0,232,122,0.05); border: 1px solid rgba(0,232,122,0.2); border-radius: 8px; padding: 12px 16px; color: #00e87a; font-size: 13px; margin-bottom: 16px; }
+/* Login */
 .login-box { max-width: 400px; margin: 80px auto; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; }
 .login-box h2 { font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 8px; }
 .login-box p { color: #888; margin-bottom: 24px; font-size: 14px; }
@@ -193,6 +223,7 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .tab { display: flex; gap: 12px; margin-bottom: 24px; }
 .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 14px; }
 .tab-btn.active { background: #00e87a; color: #000; border-color: #00e87a; font-weight: 600; }
+/* Modal */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
 .modal { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; width: 100%; max-width: 520px; position: relative; }
@@ -255,6 +286,9 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 const API = 'https://leadly-backend-tgbl.onrender.com';
 let token = localStorage.getItem('leadly_token');
 let allLeads = [];
+let searchCount = 0;
+let searchCap = 50;
+let savedPlaceIds = new Set();
 
 function render() {
   if (token) { showDashboard(); } else { showLogin(); }
@@ -323,6 +357,7 @@ async function showDashboard() {
   if (res.status === 401) { token = null; localStorage.removeItem('leadly_token'); render(); return; }
   const data = await res.json();
   allLeads = data.leads;
+  searchCap = { free: 50, starter: 150, pro: 250, agency: 99999 }[data.plan || 'free'] || 50;
 
   document.getElementById('app').innerHTML = \`
     <nav>
@@ -358,14 +393,16 @@ async function showDashboard() {
           <a href="\${data.pageUrl}" target="_blank"><button class="copy-btn" style="background:#1a1a1a;color:#fff;border:1px solid rgba(255,255,255,0.2)">Visit</button></a>
         </div>
       </div>
-      <div class="leads-section">
-        <h3>Recent leads</h3>
+
+      <div class="section-tabs">
+        <button class="section-tab active" onclick="switchTab('my-leads')">My Leads</button>
+        <button class="section-tab" onclick="switchTab('find-leads')">Find Leads</button>
+      </div>
+
+      <!-- My Leads Tab -->
+      <div id="tab-my-leads" class="tab-panel active">
         <div class="leads-controls">
           <input class="search-input" type="text" id="leadSearch" placeholder="Search by name, email, or phone..." oninput="filterLeads()">
-          <select class="filter-select" id="locationFilter" onchange="filterLeads()">
-            <option value="">All locations</option>
-            \${[...new Set(data.leads.map(l => l.url || '').filter(Boolean))].map(u => \`<option value="\${u}">\${u}</option>\`).join('')}
-          </select>
           <select class="filter-select" id="sortFilter" onchange="filterLeads()">
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
@@ -375,8 +412,31 @@ async function showDashboard() {
           \${renderLeadCards(data.leads)}
         </div>
       </div>
+
+      <!-- Find Leads Tab -->
+      <div id="tab-find-leads" class="tab-panel">
+        <div class="find-leads-form">
+          <h3>Find Leads</h3>
+          <p>Search for businesses by type and location. Save them directly to your leads.</p>
+          <div class="find-leads-row">
+            <input type="text" id="bizType" placeholder="Business type (e.g. auto shop, dentist, plumber)">
+            <input type="text" id="bizLocation" placeholder="City, State (e.g. Dallas, TX)">
+            <button class="search-btn" id="searchBtn" onclick="searchLeads()">Search</button>
+          </div>
+        </div>
+        <div id="searchCapNotice" class="cap-notice" style="display:none"></div>
+        <div id="prospectResults"></div>
+      </div>
     </div>
   \`;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.section-tab').forEach((b, i) => {
+    b.classList.toggle('active', (tab === 'my-leads' && i === 0) || (tab === 'find-leads' && i === 1));
+  });
+  document.getElementById('tab-my-leads').classList.toggle('active', tab === 'my-leads');
+  document.getElementById('tab-find-leads').classList.toggle('active', tab === 'find-leads');
 }
 
 function renderLeadCards(leads) {
@@ -395,26 +455,90 @@ function renderLeadCards(leads) {
 
 function filterLeads() {
   const search = document.getElementById('leadSearch').value.toLowerCase();
-  const location = document.getElementById('locationFilter').value;
   const sort = document.getElementById('sortFilter').value;
+  let filtered = allLeads.filter(l =>
+    !search ||
+    (l.name || '').toLowerCase().includes(search) ||
+    (l.email || '').toLowerCase().includes(search) ||
+    (l.phone || '').toLowerCase().includes(search) ||
+    (l.message || '').toLowerCase().includes(search)
+  );
+  if (sort === 'oldest') filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  else filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  document.getElementById('leadsContainer').innerHTML = renderLeadCards(filtered);
+}
 
-  let filtered = allLeads.filter(l => {
-    const matchSearch = !search ||
-      (l.name || '').toLowerCase().includes(search) ||
-      (l.email || '').toLowerCase().includes(search) ||
-      (l.phone || '').toLowerCase().includes(search) ||
-      (l.message || '').toLowerCase().includes(search);
-    const matchLocation = !location || (l.url || '') === location;
-    return matchSearch && matchLocation;
-  });
+async function searchLeads() {
+  const bizType = document.getElementById('bizType').value.trim();
+  const bizLocation = document.getElementById('bizLocation').value.trim();
+  if (!bizType || !bizLocation) { alert('Please enter a business type and location.'); return; }
 
-  if (sort === 'oldest') {
-    filtered = filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  } else {
-    filtered = filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  if (searchCount >= searchCap) {
+    document.getElementById('searchCapNotice').style.display = 'block';
+    document.getElementById('searchCapNotice').textContent = 'You have reached your search limit for this plan. Upgrade to search more leads.';
+    return;
   }
 
-  document.getElementById('leadsContainer').innerHTML = renderLeadCards(filtered);
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Searching...';
+  document.getElementById('prospectResults').innerHTML = '<div class="empty">Searching for leads...</div>';
+
+  try {
+    const res = await fetch(\`\${API}/search-leads?type=\${encodeURIComponent(bizType)}&location=\${encodeURIComponent(bizLocation)}\`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    searchCount++;
+
+    const capNotice = document.getElementById('searchCapNotice');
+    capNotice.style.display = 'block';
+    capNotice.textContent = \`\${searchCount} of \${searchCap} searches used this month.\`;
+
+    if (!data.results || data.results.length === 0) {
+      document.getElementById('prospectResults').innerHTML = '<div class="empty">No results found. Try a different search.</div>';
+    } else {
+      document.getElementById('prospectResults').innerHTML = data.results.map(p => \`
+        <div class="prospect-card">
+          <div class="prospect-info">
+            <div class="prospect-name">\${p.name}</div>
+            <div class="prospect-address">📍 \${p.address || 'Address not available'}</div>
+            \${p.phone ? '<div class="prospect-phone">📞 ' + p.phone + '</div>' : ''}
+            \${p.rating ? '<div class="prospect-rating">⭐ ' + p.rating + ' (' + (p.reviews || 0) + ' reviews)</div>' : ''}
+          </div>
+          <div class="prospect-actions">
+            <button class="save-lead-btn" id="save-\${p.place_id}" onclick="saveLead('\${p.place_id}', '\${p.name.replace(/'/g,"\\\\'")}', '\${(p.phone||'').replace(/'/g,"\\\\'")}', '\${(p.address||'').replace(/'/g,"\\\\'")}')">
+              \${savedPlaceIds.has(p.place_id) ? '✓ Saved' : 'Save Lead'}
+            </button>
+            \${p.website ? '<a class="website-btn" href="' + p.website + '" target="_blank">Website</a>' : ''}
+          </div>
+        </div>
+      \`).join('');
+    }
+  } catch (err) {
+    document.getElementById('prospectResults').innerHTML = '<div class="empty">Search failed. Please try again.</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Search';
+}
+
+async function saveLead(placeId, name, phone, address) {
+  if (savedPlaceIds.has(placeId)) return;
+  const btn = document.getElementById('save-' + placeId);
+  btn.textContent = 'Saving...';
+  try {
+    await fetch(API + '/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email: '', message: address, business: name, url: 'Find Leads' })
+    });
+    savedPlaceIds.add(placeId);
+    btn.textContent = '✓ Saved';
+    btn.classList.add('saved');
+  } catch (err) {
+    btn.textContent = 'Save Lead';
+  }
 }
 
 function openIntegrations() {
@@ -541,6 +665,56 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && req.url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateDashboardPage());
+    return;
+  }
+
+  // GET /search-leads — Google Places business search
+  if (req.method === "GET" && req.url.startsWith("/search-leads")) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(token);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+
+    const urlObj = new URL(req.url, "http://localhost");
+    const type = urlObj.searchParams.get("type") || "";
+    const location = urlObj.searchParams.get("location") || "";
+
+    try {
+      const query = `${type} in ${location}`;
+      const placesRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_PLACES_API_KEY}`
+      );
+      const placesData = await placesRes.json();
+
+      const results = await Promise.all(
+        (placesData.results || []).slice(0, 20).map(async (place) => {
+          let phone = '';
+          let website = '';
+          try {
+            const detailRes = await fetch(
+              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,website&key=${GOOGLE_PLACES_API_KEY}`
+            );
+            const detail = await detailRes.json();
+            phone = detail.result?.formatted_phone_number || '';
+            website = detail.result?.website || '';
+          } catch (e) {}
+          return {
+            place_id: place.place_id,
+            name: place.name,
+            address: place.formatted_address,
+            rating: place.rating,
+            reviews: place.user_ratings_total,
+            phone,
+            website,
+          };
+        })
+      );
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ results }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

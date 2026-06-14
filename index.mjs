@@ -156,12 +156,15 @@ function generateDashboardPage() {
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'DM Sans', sans-serif; background: #080808; color: #f5f5f0; min-height: 100vh; }
-nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
+nav { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.nav-right { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 480px) { nav { padding: 12px 16px; } .nav-right { gap: 8px; } .nav-link { font-size: 12px; } .logout { font-size: 12px; } }
 .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; text-decoration: none; color: inherit; }
 .logo span { color: #00e87a; }
 .nav-link { color: #00e87a; font-size: 14px; text-decoration: none; cursor: pointer; background: none; border: none; font-family: inherit; }
 .logout { color: #888; cursor: pointer; font-size: 14px; background: none; border: none; }
 .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+@media (max-width: 480px) { .container { padding: 24px 16px; } .welcome { font-size: 22px; } .stat-num { font-size: 28px; } }
 .welcome { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
 .subtitle { color: #888; margin-bottom: 40px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
@@ -362,7 +365,7 @@ async function showDashboard() {
   document.getElementById('app').innerHTML = \`
     <nav>
       <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
-      <div style="display:flex;gap:16px;align-items:center;">
+      <div class="nav-right">
         <button class="nav-link" onclick="openIntegrations()">Integrations</button>
         <a href="https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00" target="_blank" class="nav-link">Manage Subscription</a>
         <button class="logout" onclick="logout()">Sign out</button>

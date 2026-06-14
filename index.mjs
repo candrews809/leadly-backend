@@ -171,10 +171,17 @@ nav { padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.08); displ
 .url-text { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: #00e87a; font-size: 14px; word-break: break-all; }
 .copy-btn { background: #00e87a; color: #000; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .leads-section h3 { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 16px; }
+.leads-controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-input { flex: 1; min-width: 200px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
+.search-input:focus { border-color: rgba(0,232,122,0.4); }
+.search-input::placeholder { color: #666; }
+.filter-select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; cursor: pointer; }
+.filter-select option { background: #1a1a1a; }
 .lead-card { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; margin-bottom: 12px; }
 .lead-name { font-weight: 600; margin-bottom: 4px; }
 .lead-email { color: #00e87a; font-size: 14px; margin-bottom: 4px; }
 .lead-time { color: #666; font-size: 12px; }
+.lead-source { color: #666; font-size: 12px; margin-top: 4px; }
 .empty { text-align: center; padding: 60px; color: #666; }
 .login-box { max-width: 400px; margin: 80px auto; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; }
 .login-box h2 { font-family: 'Syne', sans-serif; font-size: 24px; margin-bottom: 8px; }
@@ -186,7 +193,6 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 .tab { display: flex; gap: 12px; margin-bottom: 24px; }
 .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 14px; }
 .tab-btn.active { background: #00e87a; color: #000; border-color: #00e87a; font-weight: 600; }
-/* Modal */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
 .modal-overlay.open { display: flex; }
 .modal { background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 40px; width: 100%; max-width: 520px; position: relative; }
@@ -248,6 +254,7 @@ input:focus { border-color: rgba(0,232,122,0.4); }
 <script>
 const API = 'https://leadly-backend-tgbl.onrender.com';
 let token = localStorage.getItem('leadly_token');
+let allLeads = [];
 
 function render() {
   if (token) { showDashboard(); } else { showLogin(); }
@@ -315,6 +322,8 @@ async function showDashboard() {
   const res = await fetch(API + '/dashboard', { headers: {'Authorization': 'Bearer ' + token} });
   if (res.status === 401) { token = null; localStorage.removeItem('leadly_token'); render(); return; }
   const data = await res.json();
+  allLeads = data.leads;
+
   document.getElementById('app').innerHTML = \`
     <nav>
       <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
@@ -351,12 +360,61 @@ async function showDashboard() {
       </div>
       <div class="leads-section">
         <h3>Recent leads</h3>
-        \${data.leads.length === 0
-          ? '<div class="empty">No leads yet. Share your page to start capturing leads!</div>'
-          : data.leads.map(l => \`<div class="lead-card"><div class="lead-name">\${l.name || 'Unknown'}</div><div class="lead-email">\${l.email || ''}</div>\${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}<div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div></div>\`).join('')}
+        <div class="leads-controls">
+          <input class="search-input" type="text" id="leadSearch" placeholder="Search by name, email, or phone..." oninput="filterLeads()">
+          <select class="filter-select" id="locationFilter" onchange="filterLeads()">
+            <option value="">All locations</option>
+            \${[...new Set(data.leads.map(l => l.url || '').filter(Boolean))].map(u => \`<option value="\${u}">\${u}</option>\`).join('')}
+          </select>
+          <select class="filter-select" id="sortFilter" onchange="filterLeads()">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
+        <div id="leadsContainer">
+          \${renderLeadCards(data.leads)}
+        </div>
       </div>
     </div>
   \`;
+}
+
+function renderLeadCards(leads) {
+  if (leads.length === 0) return '<div class="empty">No leads found.</div>';
+  return leads.map(l => \`
+    <div class="lead-card">
+      <div class="lead-name">\${l.name || 'Unknown'}</div>
+      <div class="lead-email">\${l.email || ''}</div>
+      \${l.phone ? '<div class="lead-time">📞 ' + l.phone + '</div>' : ''}
+      \${l.message ? '<div class="lead-time">💬 ' + l.message + '</div>' : ''}
+      \${l.url ? '<div class="lead-source">🌐 ' + l.url + '</div>' : ''}
+      <div class="lead-time">\${new Date(l.timestamp || Date.now()).toLocaleDateString()}</div>
+    </div>
+  \`).join('');
+}
+
+function filterLeads() {
+  const search = document.getElementById('leadSearch').value.toLowerCase();
+  const location = document.getElementById('locationFilter').value;
+  const sort = document.getElementById('sortFilter').value;
+
+  let filtered = allLeads.filter(l => {
+    const matchSearch = !search ||
+      (l.name || '').toLowerCase().includes(search) ||
+      (l.email || '').toLowerCase().includes(search) ||
+      (l.phone || '').toLowerCase().includes(search) ||
+      (l.message || '').toLowerCase().includes(search);
+    const matchLocation = !location || (l.url || '') === location;
+    return matchSearch && matchLocation;
+  });
+
+  if (sort === 'oldest') {
+    filtered = filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  } else {
+    filtered = filtered.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  }
+
+  document.getElementById('leadsContainer').innerHTML = renderLeadCards(filtered);
 }
 
 function openIntegrations() {
@@ -473,7 +531,7 @@ const server = createServer(async (req, res) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     const user = await getUserFromToken(token);
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
-    const myLeads = await leadsCollection.find({}).sort({ timestamp: -1 }).limit(20).toArray();
+    const myLeads = await leadsCollection.find({}).sort({ timestamp: -1 }).limit(100).toArray();
     const pageUrl = `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`;
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ name: user.name, businessName: user.businessName, pageUrl, leadCount: myLeads.length, leads: myLeads, plan: user.plan || 'free' }));

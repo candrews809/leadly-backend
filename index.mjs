@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
-const NOTIFY_EMAIL = "sfgiants4cole@gmail.com";
+const NOTIFY_EMAIL = "tryleadly@gmail.com";
 const PORT = process.env.PORT || 3000;
 
 const PRICE_IDS = {

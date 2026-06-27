@@ -536,7 +536,7 @@ function renderDashboard(d) {
         <h3>Find new leads</h3>
       </div>
       <div class="prospect-search-wrap">
-        <input type="text" id="prospect-query" placeholder="e.g. plumbers in Austin TX" onkeydown="if(event.key==='Enter')findLeads()">
+        <input type="text" id="prospect-query" placeholder="e.g. marketing agencies in New York" onkeydown="if(event.key==='Enter')findLeads()">
         <button class="search-go" onclick="findLeads()">Search</button>
       </div>
       <div id="prospect-results" style="max-height:600px;overflow-y:auto"></div>

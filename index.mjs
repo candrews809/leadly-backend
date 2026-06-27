@@ -369,57 +369,227 @@ function generateDashboardPage() {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
-nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
 .logo span{color:#00e87a}
-.nav-right{display:flex;align-items:center;gap:16px}
-.upgrade-btn{background:#00e87a;color:#000;border:none;padding:8px 16px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px}
-.logout{color:#888;cursor:pointer;font-size:14px;background:none;border:none}
+.nav-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'DM Sans',sans-serif;transition:background .15s}
+.nav-btn:hover{background:rgba(255,255,255,0.1)}
+.upgrade-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif}
+.logout{color:#666;cursor:pointer;font-size:13px;background:none;border:none;font-family:'DM Sans',sans-serif}
+.logout:hover{color:#fff}
 .container{max-width:900px;margin:0 auto;padding:40px 24px}
 .welcome{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}
-.subtitle{color:#888;margin-bottom:40px}
+.subtitle{color:#888;margin-bottom:32px}
+.plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
 .stat-card{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px}
-.stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:#00e87a}
+.stat-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:#00e87a;min-height:48px;display:flex;align-items:center}
 .stat-label{color:#888;font-size:14px;margin-top:4px}
 .section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;margin-bottom:24px}
-.section h3{font-family:'Syne',sans-serif;font-size:16px;margin-bottom:16px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section h3{font-family:'Syne',sans-serif;font-size:16px}
 .url-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .url-text{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#00e87a;font-size:14px;word-break:break-all;min-width:0}
-.btn-sm{background:#00e87a;color:#000;border:none;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px}
+.btn-sm{background:#00e87a;color:#000;border:none;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px;font-family:'DM Sans',sans-serif}
 .btn-ghost{background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.15);padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px;text-decoration:none;display:inline-block}
+
+/* Search */
+.search-wrap{position:relative;margin-bottom:16px}
+.search-wrap input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px 11px 40px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.search-wrap input:focus{border-color:rgba(0,232,122,0.4)}
+.search-wrap input::placeholder{color:#555}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#555;font-size:15px}
+
+/* Lead cards */
 .lead-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;gap:16px;align-items:flex-start}
 .lead-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,232,122,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00e87a;font-size:16px;flex-shrink:0}
 .lead-name{font-weight:600;margin-bottom:3px}
 .lead-email{color:#00e87a;font-size:14px;margin-bottom:2px}
 .lead-meta{color:#666;font-size:12px}
+.lead-hidden{display:none}
 .empty{text-align:center;padding:60px;color:#555}
-.empty-icon{font-size:40px;margin-bottom:12px}
-.plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}
-.integration-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
-.integration-row:last-child{border-bottom:none}
-.int-label{flex:1;font-size:15px}
-.int-label small{display:block;color:#666;font-size:12px;margin-top:2px}
-input[type=url]{flex:2;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 13px;border-radius:7px;font-size:14px;outline:none;min-width:0}
+.no-results{text-align:center;padding:40px;color:#555;font-size:14px;display:none}
+
+/* Integrations */
+.int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
+.int-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;text-decoration:none;color:#fff;transition:border-color .15s;display:block}
+.int-card:hover{border-color:rgba(0,232,122,0.4)}
+.int-card-name{font-weight:600;font-size:14px;margin-bottom:4px}
+.int-card-desc{color:#666;font-size:12px}
+.webhook-row{display:flex;gap:10px;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
+.webhook-label{font-size:14px;font-weight:600;white-space:nowrap}
+input[type=url]{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 13px;border-radius:7px;font-size:14px;outline:none;min-width:0;font-family:'DM Sans',sans-serif}
 input[type=url]:focus{border-color:rgba(0,232,122,0.4)}
-.save-int{background:#00e87a;color:#000;border:none;padding:9px 16px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;white-space:nowrap}
-.toast{position:fixed;bottom:24px;right:24px;background:#00e87a;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none}
+.save-int{background:#00e87a;color:#000;border:none;padding:9px 16px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#00e87a;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
 </style>
 </head>
 <body>
 <div id="app">
-  <nav><div class="logo">Lead<span>ly</span></div></nav>
-  <div class="container" style="text-align:center;padding-top:100px">
-    <div style="color:#00e87a;font-size:20px">Loading…</div>
-  </div>
+  <nav>
+    <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
+    <div style="color:#00e87a;font-size:14px">Loading…</div>
+  </nav>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
 const API = 'https://leadly-backend-tgbl.onrender.com';
+const PORTAL = 'https://billing.stripe.com/p/login/eVq6oHaEUd3i27GaGd67S00';
 let token = localStorage.getItem('leadly_token');
+let allLeads = [];
 
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+async function init() {
+  if (!token) { window.location.href = '/signup-page'; return; }
+  const res = await fetch(API + '/dashboard', { headers: { Authorization: 'Bearer ' + token } });
+  if (res.status === 401) { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; return; }
+  const d = await res.json();
+  allLeads = d.leads || [];
+  renderDashboard(d);
+}
+
+function renderDashboard(d) {
+  const leadsHtml = allLeads.length === 0
+    ? \`<div class="empty"><p>No leads yet.</p><p style="color:#555;font-size:14px;margin-top:8px">Share your page link to start capturing leads.</p></div>\`
+    : allLeads.map((l, i) => {
+        const initial = (l.name || '?')[0].toUpperCase();
+        return \`<div class="lead-card" data-idx="\${i}">
+          <div class="lead-avatar">\${initial}</div>
+          <div>
+            <div class="lead-name">\${l.name || 'Unknown'}</div>
+            <div class="lead-email">\${l.email || ''}</div>
+            \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
+            \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
+            <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          </div>
+        </div>\`;
+      }).join('');
+
+  document.getElementById('app').innerHTML = \`
+<nav>
+  <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
+  <div class="nav-right">
+    \${d.plan === 'free' ? \`<button class="upgrade-btn" onclick="upgrade()">Upgrade</button>\` : ''}
+    <a href="\${PORTAL}" target="_blank" class="nav-btn">Manage Subscription</a>
+    <button class="nav-btn" onclick="document.getElementById('integrations-section').scrollIntoView({behavior:'smooth'})">Integrations</button>
+    <button class="logout" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+<div class="container">
+  <div class="welcome">Welcome back, \${d.name} 👋</div>
+  <div class="subtitle">\${d.businessName}<span class="plan-badge">\${(d.plan||'free').toUpperCase()}</span></div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num">\${d.leadCount ?? 0}</div><div class="stat-label">Total leads</div></div>
+    <div class="stat-card"><div class="stat-num">\${d.leadsThisMonth ?? 0}</div><div class="stat-label">This month</div></div>
+    <div class="stat-card"><div class="stat-num">\${d.cap === 999999 ? '∞' : d.cap}</div><div class="stat-label">Monthly cap</div></div>
+  </div>
+
+  <div class="section">
+    <h3>Your lead page</h3>
+    <div class="url-box" style="margin-top:16px">
+      <div class="url-text">\${d.pageUrl}</div>
+      <button class="btn-sm" onclick="navigator.clipboard.writeText('\${d.pageUrl}').then(()=>toast('Copied!'))">Copy link</button>
+      <a class="btn-ghost" href="\${d.pageUrl}" target="_blank">Visit</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Recent leads</h3>
+      <span style="color:#555;font-size:13px">\${allLeads.length} total</span>
+    </div>
+    \${allLeads.length > 0 ? \`
+    <div class="search-wrap">
+      <span class="search-icon">&#9906;</span>
+      <input type="text" placeholder="Search leads by name, email, phone..." oninput="searchLeads(this.value)" id="lead-search">
+    </div>\` : ''}
+    <div id="leads-list">\${leadsHtml}</div>
+    <div class="no-results" id="no-results">No leads match your search.</div>
+  </div>
+
+  <div class="section" id="integrations-section">
+    <h3 style="margin-bottom:16px">Integrations</h3>
+    <div class="int-grid">
+      <a href="https://zapier.com/apps/salesforce/integrations" target="_blank" class="int-card">
+        <div class="int-card-name">Salesforce</div>
+        <div class="int-card-desc">Connect via Zapier webhook</div>
+      </a>
+      <a href="https://zapier.com/apps/hubspot/integrations" target="_blank" class="int-card">
+        <div class="int-card-name">HubSpot</div>
+        <div class="int-card-desc">Connect via Zapier webhook</div>
+      </a>
+      <a href="https://zapier.com/apps/gohighlevel/integrations" target="_blank" class="int-card">
+        <div class="int-card-name">GoHighLevel</div>
+        <div class="int-card-desc">Connect via Zapier webhook</div>
+      </a>
+      <a href="https://zapier.com" target="_blank" class="int-card">
+        <div class="int-card-name">Zapier</div>
+        <div class="int-card-desc">Connect any Zapier workflow</div>
+      </a>
+    </div>
+    <div class="webhook-row">
+      <span class="webhook-label">Custom webhook</span>
+      <input type="url" id="webhook-url" placeholder="https://hooks.zapier.com/…" value="\${d.webhookUrl || ''}">
+      <button class="save-int" onclick="saveWebhook()">Save</button>
+    </div>
+  </div>
+</div>\`;
+}
+
+function searchLeads(query) {
+  const q = query.toLowerCase().trim();
+  const cards = document.querySelectorAll('.lead-card');
+  let visible = 0;
+  cards.forEach((card, i) => {
+    const l = allLeads[i];
+    const match = !q ||
+      (l.name  || '').toLowerCase().includes(q) ||
+      (l.email || '').toLowerCase().includes(q) ||
+      (l.phone || '').toLowerCase().includes(q) ||
+      (l.message || '').toLowerCase().includes(q);
+    card.style.display = match ? 'flex' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('no-results').style.display = visible === 0 && q ? 'block' : 'none';
+}
+
+async function saveWebhook() {
+  const url = document.getElementById('webhook-url').value.trim();
+  await fetch(API + '/settings/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ webhookUrl: url })
+  });
+  toast('Webhook saved!');
+}
+
+async function upgrade() {
+  const res  = await fetch(API + '/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ plan: 'pro' })
+  });
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
+}
+
+function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
+
+init();
+</script>
+</body>
+</html>`;
+}
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');

@@ -585,15 +585,19 @@ async function upgrade() {
 function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
 
 async function removeLead(id, idx) {
-  // removed confirm dialog - delete instantly
   try {
-    await fetch(API + '/leads/' + id, {
-      method: 'DELETE',
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    if (id) {
+      await fetch(API + '/leads/' + id, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+    }
     allLeads.splice(idx, 1);
-    const card = document.getElementById('lead-card-' + id);
+    // Remove card by id or by index
+    const card = id ? document.getElementById('lead-card-' + id) : document.querySelector('[data-idx="' + idx + '"]');
     if (card) card.remove();
+    // Re-index remaining cards
+    document.querySelectorAll('.lead-card').forEach((c, i) => c.setAttribute('data-idx', i));
     toast('Lead removed');
   } catch(e) {
     toast('Failed to remove lead');
@@ -637,7 +641,7 @@ async function addProspect(i) {
   const btn = document.getElementById('add-' + i);
   btn.disabled = true; btn.textContent = 'Adding...';
   try {
-    await fetch(API + '/leads', {
+    const addRes = await fetch(API + '/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({
@@ -650,9 +654,10 @@ async function addProspect(i) {
         source: 'prospect_search'
       })
     });
+    const addData = await addRes.json();
     btn.textContent = 'Added';
     toast('Lead added!');
-    allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date() });
+    allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date(), id: addData.id || '' });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();
       return \`<div class="lead-card" data-idx="\${idx}" id="lead-card-\${l.id || idx}">
@@ -664,7 +669,7 @@ async function addProspect(i) {
           \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
-        \${l.id ? \`<button onclick="removeLead('\${l.id}', \${idx})" style="background:none;border:none;color:#444;cursor:pointer;font-size:18px;padding:4px 8px;flex-shrink:0" title="Remove">&times;</button>\` : ''}
+        <button onclick="removeLead('\${l.id || ''}', \${idx})" style="background:none;border:none;color:#444;cursor:pointer;font-size:18px;padding:4px 8px;flex-shrink:0;line-height:1" title="Remove">&times;</button>
       </div>\`;
     }).join('');
   } catch(e) {
@@ -1144,14 +1149,14 @@ const server = createServer(async (req, res) => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date() };
         const database = await getDb();
-        await database.collection("leads").insertOne(lead);
+        const inserted = await database.collection("leads").insertOne(lead);
         // Find business owner and notify
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
         const notifyTo = owner?.email || NOTIFY_EMAIL;
         sendLeadEmail(lead, notifyTo).catch(console.error);
         if (owner?.webhookUrl) fireWebhook(owner.webhookUrl, lead).catch(console.error);
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true }));
+        res.end(JSON.stringify({ success: true, id: inserted.insertedId.toString() }));
       } catch (err) {
         console.error("Lead error:", err.message);
         res.writeHead(500, { "Content-Type": "application/json" });

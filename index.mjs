@@ -384,7 +384,7 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
 .stat-card{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px}
-.stat-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:#00e87a;min-height:48px;display:flex;align-items:center}
+.stat-num{font-family:'DM Sans',sans-serif;font-size:40px;font-weight:700;color:#00e87a;min-height:48px;display:flex;align-items:center}
 .stat-label{color:#888;font-size:14px;margin-top:4px}
 .section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;margin-bottom:24px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -480,7 +480,7 @@ function renderDashboard(d) {
   <div class="nav-right">
     \${d.plan === 'free' ? \`<button class="upgrade-btn" onclick="upgrade()">Upgrade</button>\` : ''}
     <a href="\${PORTAL}" target="_blank" class="nav-btn">Manage Subscription</a>
-    <button class="nav-btn" onclick="document.getElementById('integrations-section').scrollIntoView({behavior:'smooth'})">Integrations</button>
+    <button class="nav-btn" onclick="window.location.href='/integrations-page'">Integrations</button>
     <button class="logout" onclick="logout()">Sign out</button>
   </div>
 </nav>
@@ -517,32 +517,7 @@ function renderDashboard(d) {
     <div class="no-results" id="no-results">No leads match your search.</div>
   </div>
 
-  <div class="section" id="integrations-section">
-    <h3 style="margin-bottom:16px">Integrations</h3>
-    <div class="int-grid">
-      <a href="https://zapier.com/apps/salesforce/integrations" target="_blank" class="int-card">
-        <div class="int-card-name">Salesforce</div>
-        <div class="int-card-desc">Connect via Zapier webhook</div>
-      </a>
-      <a href="https://zapier.com/apps/hubspot/integrations" target="_blank" class="int-card">
-        <div class="int-card-name">HubSpot</div>
-        <div class="int-card-desc">Connect via Zapier webhook</div>
-      </a>
-      <a href="https://zapier.com/apps/gohighlevel/integrations" target="_blank" class="int-card">
-        <div class="int-card-name">GoHighLevel</div>
-        <div class="int-card-desc">Connect via Zapier webhook</div>
-      </a>
-      <a href="https://zapier.com" target="_blank" class="int-card">
-        <div class="int-card-name">Zapier</div>
-        <div class="int-card-desc">Connect any Zapier workflow</div>
-      </a>
-    </div>
-    <div class="webhook-row">
-      <span class="webhook-label">Custom webhook</span>
-      <input type="url" id="webhook-url" placeholder="https://hooks.zapier.com/…" value="\${d.webhookUrl || ''}">
-      <button class="save-int" onclick="saveWebhook()">Save</button>
-    </div>
-  </div>
+
 </div>\`;
 }
 
@@ -591,6 +566,172 @@ init();
 </html>`;
 }
 
+
+function generateIntegrationsPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integrations — Leadly</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
+nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo span{color:#00e87a}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'DM Sans',sans-serif}
+.back-btn{color:#888;text-decoration:none;font-size:14px;font-family:'DM Sans',sans-serif}
+.back-btn:hover{color:#fff}
+.container{max-width:700px;margin:0 auto;padding:40px 24px}
+h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px}
+.subtitle{color:#888;font-size:15px;margin-bottom:40px}
+.int-section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;margin-bottom:20px}
+.int-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.int-icon{width:44px;height:44px;border-radius:10px;background:rgba(0,232,122,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.int-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
+.int-desc{color:#888;font-size:13px;margin-top:2px}
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
+input[type=url],input[type=text]{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 14px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+input:focus{border-color:rgba(0,232,122,0.4)}
+input::placeholder{color:#555}
+.save-btn{background:#00e87a;color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;margin-top:4px}
+.save-btn:hover{background:#00c96a}
+.how-to{background:rgba(255,255,255,0.03);border-radius:8px;padding:14px;margin-top:14px}
+.how-to p{font-size:13px;color:#666;line-height:1.6}
+.how-to a{color:#00e87a;text-decoration:none}
+.toast{position:fixed;bottom:24px;right:24px;background:#00e87a;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<nav>
+  <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
+  <div class="nav-right">
+    <a href="/dashboard-page" class="back-btn">← Back to dashboard</a>
+  </div>
+</nav>
+<div class="container">
+  <h1>Integrations</h1>
+  <p class="subtitle">Connect Leadly to your CRM. Every new lead will be sent there automatically.</p>
+
+  <div class="int-section">
+    <div class="int-header">
+      <div class="int-icon">SF</div>
+      <div>
+        <div class="int-title">Salesforce</div>
+        <div class="int-desc">Send leads directly to your Salesforce CRM</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Salesforce Webhook URL</label>
+      <input type="url" id="sf-webhook" placeholder="https://hooks.zapier.com/hooks/catch/…">
+    </div>
+    <button class="save-btn" onclick="save('salesforce', 'sf-webhook')">Save</button>
+    <div class="how-to">
+      <p>1. Go to <a href="https://zapier.com" target="_blank">Zapier</a> and create a new Zap<br>
+      2. Set trigger to "Webhooks by Zapier" → Catch Hook<br>
+      3. Set action to Salesforce → Create Lead<br>
+      4. Copy the webhook URL and paste it above</p>
+    </div>
+  </div>
+
+  <div class="int-section">
+    <div class="int-header">
+      <div class="int-icon">HS</div>
+      <div>
+        <div class="int-title">HubSpot</div>
+        <div class="int-desc">Send leads directly to your HubSpot CRM</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>HubSpot Webhook URL</label>
+      <input type="url" id="hs-webhook" placeholder="https://hooks.zapier.com/hooks/catch/…">
+    </div>
+    <button class="save-btn" onclick="save('hubspot', 'hs-webhook')">Save</button>
+    <div class="how-to">
+      <p>1. Go to <a href="https://zapier.com" target="_blank">Zapier</a> and create a new Zap<br>
+      2. Set trigger to "Webhooks by Zapier" → Catch Hook<br>
+      3. Set action to HubSpot → Create Contact<br>
+      4. Copy the webhook URL and paste it above</p>
+    </div>
+  </div>
+
+  <div class="int-section">
+    <div class="int-header">
+      <div class="int-icon">GHL</div>
+      <div>
+        <div class="int-title">GoHighLevel</div>
+        <div class="int-desc">Send leads directly to your GoHighLevel account</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>GoHighLevel Webhook URL</label>
+      <input type="url" id="ghl-webhook" placeholder="https://hooks.zapier.com/hooks/catch/…">
+    </div>
+    <button class="save-btn" onclick="save('gohighlevel', 'ghl-webhook')">Save</button>
+    <div class="how-to">
+      <p>1. In GoHighLevel go to Settings → Integrations → Webhooks<br>
+      2. Create a new webhook and copy the URL<br>
+      3. Paste it above — no Zapier needed</p>
+    </div>
+  </div>
+
+  <div class="int-section">
+    <div class="int-header">
+      <div class="int-icon">ZP</div>
+      <div>
+        <div class="int-title">Zapier / Custom Webhook</div>
+        <div class="int-desc">Connect to any app via Zapier or a custom webhook</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Webhook URL</label>
+      <input type="url" id="custom-webhook" placeholder="https://hooks.zapier.com/hooks/catch/…">
+    </div>
+    <button class="save-btn" onclick="save('custom', 'custom-webhook')">Save</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API = 'https://leadly-backend-tgbl.onrender.com';
+const token = localStorage.getItem('leadly_token');
+if (!token) window.location.href = '/signup-page';
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+async function save(type, inputId) {
+  const url = document.getElementById(inputId).value.trim();
+  if (!url) { toast('Please enter a webhook URL'); return; }
+  await fetch(API + '/settings/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ webhookUrl: url, webhookType: type })
+  });
+  toast('Saved!');
+}
+
+// Load existing webhook
+async function loadSettings() {
+  const res = await fetch(API + '/dashboard', { headers: { Authorization: 'Bearer ' + token } });
+  if (res.status === 401) { window.location.href = '/signup-page'; return; }
+  const d = await res.json();
+  if (d.webhookUrl) {
+    document.getElementById('custom-webhook').value = d.webhookUrl;
+  }
+}
+loadSettings();
+</script>
+</body>
+</html>`;
+}
 
 function generateLandingPage(biz) {
   return `<!DOCTYPE html>
@@ -694,6 +835,14 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(generateDashboardPage());
+    return;
+  }
+
+
+  // ── GET /integrations-page ──────────────────────────────────────────────
+  if (req.method === "GET" && url === "/integrations-page") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(generateIntegrationsPage());
     return;
   }
 

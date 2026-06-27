@@ -660,7 +660,7 @@ async function addProspect(i) {
     allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date(), id: addData.id || '' });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();
-      return \`<div class="lead-card" data-idx="\${idx}" id="lead-card-\${l.id || idx}">
+      return \`<div class="lead-card" data-idx="\${idx}" id="lead-card-\${l.id || 'idx-' + idx}">
         <div class="lead-avatar">\${initial}</div>
         <div style="flex:1">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
@@ -1080,7 +1080,7 @@ const server = createServer(async (req, res) => {
       webhookUrl:    user.webhookUrl || "",
       leadCount:     allLeads.length,
       leadsThisMonth: monthLeads.length,
-      leads:         allLeads.slice(0, 50).map(l => ({ ...l, id: l._id?.toString() })),
+      leads:         allLeads.slice(0, 50).map(l => { const obj = { ...l, id: l._id ? l._id.toString() : '' }; return obj; }),
     }));
     return;
   }

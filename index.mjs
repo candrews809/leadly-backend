@@ -516,29 +516,29 @@ function renderDashboard(d) {
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-header">
-      <h3>Recent leads</h3>
-      <span style="color:#555;font-size:13px">\${allLeads.length} total</span>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+    <div class="section" style="margin-bottom:0">
+      <div class="section-header">
+        <h3>Your leads</h3>
+        <span style="color:#555;font-size:13px">\${allLeads.length} total</span>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" placeholder="Filter by name, email, phone..." oninput="searchLeads(this.value)" id="lead-search">
+      </div>
+      <div id="leads-list" style="max-height:600px;overflow-y:auto">\${leadsHtml}</div>
+      <div class="no-results" id="no-results">No leads match your search.</div>
     </div>
-    <div class="search-wrap">
-      <span class="search-icon">&#128269;</span>
-      <input type="text" placeholder="Filter your leads by name, email, phone..." oninput="searchLeads(this.value)" id="lead-search">
+    <div class="section" style="margin-bottom:0">
+      <div class="section-header">
+        <h3>Find new leads</h3>
+      </div>
+      <div class="prospect-search-wrap">
+        <input type="text" id="prospect-query" placeholder="auto repair shops Dallas TX" onkeydown="if(event.key==='Enter')findLeads()">
+        <button class="search-go" onclick="findLeads()">Search</button>
+      </div>
+      <div id="prospect-results" style="max-height:600px;overflow-y:auto"></div>
     </div>
-    <div id="leads-list">\${leadsHtml}</div>
-    <div class="no-results" id="no-results">No leads match your search.</div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <h3>Find new leads</h3>
-      <span style="color:#555;font-size:13px">Search any business type + location</span>
-    </div>
-    <div class="prospect-search-wrap">
-      <input type="text" id="prospect-query" placeholder="e.g. auto repair shops Dallas TX" onkeydown="if(event.key==='Enter')findLeads()">
-      <button class="search-go" onclick="findLeads()">Search</button>
-    </div>
-    <div id="prospect-results"></div>
   </div>
 
 

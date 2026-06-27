@@ -475,15 +475,17 @@ function renderDashboard(d) {
     ? \`<div class="empty"><p>No leads yet.</p><p style="color:#555;font-size:14px;margin-top:8px">Share your page link to start capturing leads.</p></div>\`
     : allLeads.map((l, i) => {
         const initial = (l.name || '?')[0].toUpperCase();
-        return \`<div class="lead-card" data-idx="\${i}">
+        const lid = l.id || '';
+        return \`<div class="lead-card" data-idx="\${i}" id="lead-card-\${lid || 'idx-' + i}">
           <div class="lead-avatar">\${initial}</div>
-          <div>
+          <div style="flex:1">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             <div class="lead-email">\${l.email || ''}</div>
             \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
-            \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
+            \${l.message && l.message !== 'Added from lead search' ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
           </div>
+          <button onclick="removeLead('\${lid}', \${i})" style="background:none;border:none;color:#666;cursor:pointer;font-size:22px;padding:4px 8px;flex-shrink:0;line-height:1" title="Remove">&times;</button>
         </div>\`;
       }).join('');
 

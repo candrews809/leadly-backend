@@ -584,6 +584,22 @@ async function upgrade() {
 
 function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
 
+async function removeLead(id, idx) {
+  if (!confirm('Remove this lead?')) return;
+  try {
+    await fetch(API + '/leads/' + id, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    allLeads.splice(idx, 1);
+    const card = document.getElementById('lead-card-' + id);
+    if (card) card.remove();
+    toast('Lead removed');
+  } catch(e) {
+    toast('Failed to remove lead');
+  }
+}
+
 async function findLeads() {
   const q = document.getElementById('prospect-query').value.trim();
   if (!q) return;
@@ -639,15 +655,16 @@ async function addProspect(i) {
     allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date() });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();
-      return \`<div class="lead-card" data-idx="\${idx}">
+      return \`<div class="lead-card" data-idx="\${idx}" id="lead-card-\${l.id || idx}">
         <div class="lead-avatar">\${initial}</div>
-        <div>
+        <div style="flex:1">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           <div class="lead-email">\${l.email || ''}</div>
           \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
           \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
+        \${l.id ? \`<button onclick="removeLead('\${l.id}', \${idx})" style="background:none;border:none;color:#444;cursor:pointer;font-size:18px;padding:4px 8px;flex-shrink:0" title="Remove">&times;</button>\` : ''}
       </div>\`;
     }).join('');
   } catch(e) {
@@ -1058,7 +1075,7 @@ const server = createServer(async (req, res) => {
       webhookUrl:    user.webhookUrl || "",
       leadCount:     allLeads.length,
       leadsThisMonth: monthLeads.length,
-      leads:         allLeads.slice(0, 20),
+      leads:         allLeads.slice(0, 50).map(l => ({ ...l, id: l._id?.toString() })),
     }));
     return;
   }
@@ -1093,12 +1110,23 @@ const server = createServer(async (req, res) => {
       const gUrl = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=" + encodeURIComponent(query) + "&key=" + apiKey;
       const r = await fetch(gUrl);
       const data = await r.json();
-      const results = (data.results || []).slice(0, 20).map(p => ({
-        name:    p.name,
-        address: p.formatted_address,
-        phone:   p.formatted_phone_number || "",
-        placeId: p.place_id,
-        rating:  p.rating,
+      // Fetch phone numbers via Place Details for first 10 results
+      const raw = (data.results || []).slice(0, 10);
+      const results = await Promise.all(raw.map(async p => {
+        let phone = "";
+        try {
+          const detailUrl = "https://maps.googleapis.com/maps/api/place/details/json?place_id=" + p.place_id + "&fields=formatted_phone_number&key=" + apiKey;
+          const dr = await fetch(detailUrl);
+          const dd = await dr.json();
+          phone = dd.result?.formatted_phone_number || "";
+        } catch(e) {}
+        return {
+          name:    p.name,
+          address: p.formatted_address,
+          phone,
+          placeId: p.place_id,
+          rating:  p.rating,
+        };
       }));
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ results }));
@@ -1130,6 +1158,26 @@ const server = createServer(async (req, res) => {
         res.end(JSON.stringify({ error: err.message }));
       }
     });
+    return;
+  }
+
+
+  // ── DELETE /leads/:id ────────────────────────────────────────────────────
+  if (req.method === "DELETE" && url.startsWith("/leads/")) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user  = await getUserFromToken(token);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    const id = url.replace("/leads/", "");
+    try {
+      const database = await getDb();
+      const { ObjectId } = await import("mongodb");
+      await database.collection("leads").deleteOne({ _id: new ObjectId(id), businessSlug: user.slug });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+    } catch(err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

@@ -585,7 +585,7 @@ async function upgrade() {
 function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
 
 async function removeLead(id, idx) {
-  if (!confirm('Remove this lead?')) return;
+  // removed confirm dialog - delete instantly
   try {
     await fetch(API + '/leads/' + id, {
       method: 'DELETE',

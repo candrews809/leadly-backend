@@ -3,7 +3,6 @@ import { createServer } from "http";
 import { createHmac, randomBytes } from "crypto";
 import { MongoClient, ObjectId } from "mongodb";
 
-// ─── MongoDB ───────────────────────────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI;
 let db;
 
@@ -14,6 +13,7 @@ async function getDb() {
   db = client.db("leadly");
   await db.collection("users").createIndex({ email: 1 }, { unique: true });
   await db.collection("users").createIndex({ token: 1 });
+  await db.collection("users").createIndex({ resetToken: 1 });
   await db.collection("leads").createIndex({ businessSlug: 1 });
   console.log("✅ MongoDB connected");
   return db;
@@ -22,15 +22,12 @@ async function getDb() {
 function hashPassword(password) {
   return createHmac("sha256", "leadly-secret").update(password).digest("hex");
 }
-function generateToken() {
-  return randomBytes(32).toString("hex");
-}
+function generateToken() { return randomBytes(32).toString("hex"); }
 async function getUserFromToken(token) {
   if (!token) return null;
   const database = await getDb();
   return database.collection("users").findOne({ token });
 }
-
 function generateSlug(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
@@ -55,10 +52,7 @@ async function createCheckoutSession(plan, userEmail) {
   if (userEmail) params.set("customer_email", userEmail);
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
+    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: params,
   });
   return res.json();
@@ -71,13 +65,9 @@ async function sendLeadEmail(lead, notifyTo) {
   const to = notifyTo || NOTIFY_EMAIL;
   await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
     body: JSON.stringify({
-      from: "Leadly <onboarding@resend.dev>",
-      to,
+      from: "Leadly <onboarding@resend.dev>", to,
       subject: `🎯 New Lead: ${lead.name} from ${lead.business || "your page"}`,
       html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px"><div style="background:#00e87a;padding:20px;border-radius:12px 12px 0 0"><h1 style="color:#080808;margin:0;font-size:24px">🎯 New Lead Captured!</h1></div><div style="background:#f5f5f5;padding:24px;border-radius:0 0 12px 12px"><table style="width:100%;border-collapse:collapse"><tr style="border-bottom:1px solid #e0e0e0"><td style="padding:12px 0;color:#666;width:140px">Name</td><td style="padding:12px 0;font-weight:600">${lead.name || "—"}</td></tr><tr style="border-bottom:1px solid #e0e0e0"><td style="padding:12px 0;color:#666">Email</td><td style="padding:12px 0;font-weight:600"><a href="mailto:${lead.email}" style="color:#00b85f">${lead.email || "—"}</a></td></tr><tr style="border-bottom:1px solid #e0e0e0"><td style="padding:12px 0;color:#666">Phone</td><td style="padding:12px 0;font-weight:600">${lead.phone || "—"}</td></tr><tr style="border-bottom:1px solid #e0e0e0"><td style="padding:12px 0;color:#666">Message</td><td style="padding:12px 0;font-weight:600">${lead.message || "—"}</td></tr><tr><td style="padding:12px 0;color:#666">Source</td><td style="padding:12px 0;font-weight:600">${lead.url || "Leadly"}</td></tr></table><p style="margin-top:16px;color:#999;font-size:12px">Captured: ${new Date(lead.timestamp || Date.now()).toLocaleString()}</p></div></div>`,
     }),
@@ -87,15 +77,24 @@ async function sendLeadEmail(lead, notifyTo) {
 async function sendWelcomeEmail(user) {
   await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-    },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
     body: JSON.stringify({
-      from: "Cole at Leadly <onboarding@resend.dev>",
-      to: user.email,
+      from: "Cole at Leadly <onboarding@resend.dev>", to: user.email,
       subject: "Your Leadly page is ready 🎉",
       html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px"><h1 style="font-size:28px;font-weight:800">Welcome to Leadly, ${user.name}! 👋</h1><p style="color:#555;font-size:16px;margin:16px 0">Your free lead capture page is live and ready to share.</p><div style="background:#f5f5f5;border-radius:12px;padding:20px;margin:24px 0"><p style="margin:0;font-size:14px;color:#666;margin-bottom:8px">Your lead page URL:</p><a href="https://leadly-backend-tgbl.onrender.com/page/${user.slug}" style="color:#00b85f;font-weight:700;font-size:16px">leadly-backend-tgbl.onrender.com/page/${user.slug}</a></div><p style="color:#555">Share this link on social media, in your email signature, or anywhere you want leads to come from.</p><a href="https://leadly-backend-tgbl.onrender.com/dashboard-page" style="display:inline-block;background:#00e87a;color:#080808;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Go to your dashboard →</a><p style="color:#aaa;font-size:12px;margin-top:32px">— Cole at Leadly</p></div>`,
+    }),
+  });
+}
+
+async function sendPasswordResetEmail(email, resetToken) {
+  const resetUrl = `https://leadly-backend-tgbl.onrender.com/reset-password?token=${resetToken}`;
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: "Cole at Leadly <onboarding@resend.dev>", to: email,
+      subject: "Reset your Leadly password",
+      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px"><h1 style="font-size:24px;font-weight:800">Reset your password</h1><p style="color:#555;margin:16px 0">Click the button below to reset your Leadly password. This link expires in 1 hour.</p><a href="${resetUrl}" style="display:inline-block;background:#00e87a;color:#080808;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:8px">Reset password →</a><p style="color:#aaa;font-size:12px;margin-top:32px">If you didn't request this, ignore this email. — Cole at Leadly</p></div>`,
     }),
   });
 }
@@ -103,14 +102,8 @@ async function sendWelcomeEmail(user) {
 async function fireWebhook(webhookUrl, lead) {
   if (!webhookUrl) return;
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...lead, timestamp: new Date().toISOString() }),
-    });
-  } catch (err) {
-    console.log("Webhook error:", err.message);
-  }
+    await fetch(webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...lead, timestamp: new Date().toISOString() }) });
+  } catch (err) { console.log("Webhook error:", err.message); }
 }
 
 const TIKTOK_PIXEL = `<script>
@@ -154,9 +147,12 @@ input::placeholder{color:#555}
 .btn:hover{background:#00c96a}
 .btn:disabled{opacity:0.6;cursor:not-allowed}
 .error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
+.success-msg{color:#00e87a;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(0,232,122,0.1);border-radius:6px;display:none}
 .trust{display:flex;gap:20px;margin-top:24px;justify-content:center}
 .trust-item{display:flex;align-items:center;gap:6px;color:#666;font-size:13px}
 .trust-item span{color:#00e87a}
+.forgot-link{display:block;text-align:right;color:#666;font-size:13px;cursor:pointer;margin-top:8px;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0}
+.forgot-link:hover{color:#00e87a}
 .success-box{text-align:center;padding:40px 20px;display:none}
 .success-box h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin:16px 0 8px}
 .success-box p{color:#888;margin-bottom:24px}
@@ -180,6 +176,7 @@ ${TIKTOK_PIXEL}
         <button class="tab" onclick="switchTab('login')">Sign in</button>
       </div>
       <div id="error" class="error"></div>
+      <div id="success-msg" class="success-msg"></div>
       <div id="signup-fields">
         <div class="field"><label>Your name</label><input type="text" id="s-name" placeholder="Jane Smith" autocomplete="name"></div>
         <div class="field"><label>Business name</label><input type="text" id="s-biz" placeholder="Smith Marketing" autocomplete="organization"></div>
@@ -196,6 +193,12 @@ ${TIKTOK_PIXEL}
         <div class="field"><label>Email</label><input type="email" id="l-email" placeholder="you@example.com" autocomplete="email"></div>
         <div class="field"><label>Password</label><input type="password" id="l-pass" placeholder="Your password" autocomplete="current-password"></div>
         <button class="btn" id="login-btn" onclick="doLogin()">Sign in →</button>
+        <button class="forgot-link" onclick="showForgot()">Forgot your password?</button>
+      </div>
+      <div id="forgot-fields" style="display:none">
+        <div class="field"><label>Email address</label><input type="email" id="f-email" placeholder="you@example.com" autocomplete="email"></div>
+        <button class="btn" id="forgot-btn" onclick="doForgot()">Send reset link →</button>
+        <button class="forgot-link" onclick="switchTab('login')" style="text-align:center;margin-top:12px">← Back to sign in</button>
       </div>
     </div>
     <div class="success-box" id="success-box">
@@ -215,42 +218,44 @@ function switchTab(tab) {
   const isSignup = tab === 'signup';
   document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', isSignup ? i === 0 : i === 1));
   document.getElementById('signup-fields').style.display = isSignup ? 'block' : 'none';
-  document.getElementById('login-fields').style.display  = isSignup ? 'none'  : 'block';
-  hideError();
+  document.getElementById('login-fields').style.display  = (tab === 'login') ? 'block' : 'none';
+  document.getElementById('forgot-fields').style.display = 'none';
+  hideError(); hideSuccess();
 }
-function showError(msg) { const el = document.getElementById('error'); el.textContent = msg; el.style.display = 'block'; }
+
+function showForgot() {
+  document.getElementById('login-fields').style.display  = 'none';
+  document.getElementById('forgot-fields').style.display = 'block';
+  hideError(); hideSuccess();
+}
+
+function showError(msg) { const el = document.getElementById('error'); el.textContent = msg; el.style.display = 'block'; document.getElementById('success-msg').style.display = 'none'; }
 function hideError() { document.getElementById('error').style.display = 'none'; }
+function showSuccess(msg) { const el = document.getElementById('success-msg'); el.textContent = msg; el.style.display = 'block'; document.getElementById('error').style.display = 'none'; }
+function hideSuccess() { document.getElementById('success-msg').style.display = 'none'; }
 
 async function doSignup() {
   hideError();
-  const name         = document.getElementById('s-name').value.trim();
+  const name = document.getElementById('s-name').value.trim();
   const businessName = document.getElementById('s-biz').value.trim();
-  const email        = document.getElementById('s-email').value.trim();
-  const password     = document.getElementById('s-pass').value;
+  const email = document.getElementById('s-email').value.trim();
+  const password = document.getElementById('s-pass').value;
   if (!name || !businessName || !email || !password) { showError('Please fill in all fields.'); return; }
   if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
   const btn = document.getElementById('signup-btn');
   btn.disabled = true; btn.textContent = 'Creating account…';
   try {
-    const res  = await fetch(API + '/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, businessName, plan: urlPlan || 'free' })
-    });
+    const res = await fetch(API + '/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, businessName, plan: urlPlan || 'free' }) });
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('leadly_token', data.token);
       if (data.slug) localStorage.setItem('leadly_slug', data.slug);
       if (urlPlan && urlPlan !== 'free') {
-        const ckRes  = await fetch(API + '/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.token },
-          body: JSON.stringify({ plan: urlPlan })
-        });
+        const ckRes = await fetch(API + '/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.token }, body: JSON.stringify({ plan: urlPlan }) });
         const ckData = await ckRes.json();
         if (ckData.url) { window.location.href = ckData.url; return; }
       }
-      showSuccess();
+      showSuccess2();
     } else {
       showError(data.error || 'Something went wrong. Please try again.');
       btn.disabled = false; btn.textContent = 'Create free account →';
@@ -263,21 +268,17 @@ async function doSignup() {
 
 async function doLogin() {
   hideError();
-  const email    = document.getElementById('l-email').value.trim();
+  const email = document.getElementById('l-email').value.trim();
   const password = document.getElementById('l-pass').value;
   if (!email || !password) { showError('Please enter your email and password.'); return; }
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = 'Signing in…';
   try {
-    const res  = await fetch(API + '/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    });
+    const res = await fetch(API + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('leadly_token', data.token);
-      showSuccess();
+      showSuccess2();
     } else {
       showError(data.error || 'Invalid email or password.');
       btn.disabled = false; btn.textContent = 'Sign in →';
@@ -288,7 +289,23 @@ async function doLogin() {
   }
 }
 
-function showSuccess() {
+async function doForgot() {
+  hideError(); hideSuccess();
+  const email = document.getElementById('f-email').value.trim();
+  if (!email) { showError('Please enter your email address.'); return; }
+  const btn = document.getElementById('forgot-btn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(API + '/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    showSuccess('Check your email — a reset link is on its way.');
+    btn.disabled = false; btn.textContent = 'Send reset link →';
+  } catch (e) {
+    showError('Network error. Please try again.');
+    btn.disabled = false; btn.textContent = 'Send reset link →';
+  }
+}
+
+function showSuccess2() {
   try { ttq.track('CompleteRegistration'); } catch(e) {}
   document.getElementById('form-section').style.display = 'none';
   document.getElementById('success-box').style.display  = 'block';
@@ -297,9 +314,88 @@ function showSuccess() {
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
-  const signupVisible = document.getElementById('signup-fields').style.display !== 'none';
-  if (signupVisible) doSignup(); else doLogin();
+  if (document.getElementById('signup-fields').style.display !== 'none') doSignup();
+  else if (document.getElementById('login-fields').style.display !== 'none') doLogin();
+  else if (document.getElementById('forgot-fields').style.display !== 'none') doForgot();
 });
+</script>
+</body>
+</html>`;
+}
+
+function generateResetPasswordPage(token) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reset Password — Leadly</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
+nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo span{color:#00e87a}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.box{width:100%;max-width:440px}
+h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px}
+.sub{color:#888;font-size:15px;margin-bottom:32px}
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
+input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'DM Sans',sans-serif}
+input:focus{border-color:rgba(0,232,122,0.5)}
+input::placeholder{color:#555}
+.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif}
+.btn:hover{background:#00c96a}
+.btn:disabled{opacity:0.6;cursor:not-allowed}
+.error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
+.success-msg{color:#00e87a;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(0,232,122,0.1);border-radius:6px;display:none}
+</style>
+</head>
+<body>
+<nav><a href="https://useleadly.io" class="logo">Lead<span>ly</span></a></nav>
+<div class="main">
+  <div class="box">
+    <h1>Set new password</h1>
+    <p class="sub">Enter a new password for your account.</p>
+    <div id="error" class="error"></div>
+    <div id="success-msg" class="success-msg"></div>
+    <div id="reset-form">
+      <div class="field"><label>New password</label><input type="password" id="new-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="confirm-pass" placeholder="Repeat your new password" autocomplete="new-password"></div>
+      <button class="btn" id="reset-btn" onclick="doReset()">Update password →</button>
+    </div>
+  </div>
+</div>
+<script>
+const API = 'https://leadly-backend-tgbl.onrender.com';
+const resetToken = '${token}';
+function showError(msg) { const el = document.getElementById('error'); el.textContent = msg; el.style.display = 'block'; }
+async function doReset() {
+  const pass = document.getElementById('new-pass').value;
+  const confirm = document.getElementById('confirm-pass').value;
+  if (!pass || pass.length < 8) { showError('Password must be at least 8 characters.'); return; }
+  if (pass !== confirm) { showError('Passwords do not match.'); return; }
+  const btn = document.getElementById('reset-btn');
+  btn.disabled = true; btn.textContent = 'Updating…';
+  try {
+    const res = await fetch(API + '/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: resetToken, password: pass }) });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('reset-form').style.display = 'none';
+      document.getElementById('success-msg').textContent = 'Password updated! Redirecting to sign in…';
+      document.getElementById('success-msg').style.display = 'block';
+      setTimeout(() => { window.location.href = '/signup-page'; }, 2000);
+    } else {
+      showError(data.error || 'Reset link is invalid or expired.');
+      btn.disabled = false; btn.textContent = 'Update password →';
+    }
+  } catch(e) {
+    showError('Network error. Please try again.');
+    btn.disabled = false; btn.textContent = 'Update password →';
+  }
+}
 </script>
 </body>
 </html>`;
@@ -483,7 +579,7 @@ function searchLeads(query) {
 }
 
 async function upgrade() {
-  const res  = await fetch(API + '/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ plan: 'pro' }) });
+  const res = await fetch(API + '/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ plan: 'pro' }) });
   const data = await res.json();
   if (data.url) window.location.href = data.url;
 }
@@ -715,7 +811,7 @@ ${TIKTOK_PIXEL}
 <div class="footer">Powered by <a href="https://useleadly.io">Leadly</a></div>
 <script>
 async function submitLead() {
-  const name  = document.getElementById('name').value.trim();
+  const name = document.getElementById('name').value.trim();
   const email = document.getElementById('email').value.trim();
   if (!name || !email) { alert('Please enter your name and email.'); return; }
   await fetch('https://leadly-backend-tgbl.onrender.com/leads', {
@@ -724,7 +820,7 @@ async function submitLead() {
     body: JSON.stringify({ name, email, phone: document.getElementById('phone').value, message: document.getElementById('message').value, business: '${biz.businessName}', businessSlug: '${biz.slug}', url: window.location.href })
   });
   document.getElementById('leadForm').style.display = 'none';
-  document.getElementById('success').style.display  = 'block';
+  document.getElementById('success').style.display = 'block';
 }
 </script>
 </body>
@@ -732,7 +828,6 @@ async function submitLead() {
 }
 
 const PLAN_CAPS = { free: 50, starter: 150, pro: 250, agency: 999999 };
-
 const PORT = process.env.PORT || 3000;
 
 const server = createServer(async (req, res) => {
@@ -745,20 +840,23 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "GET" && url === "/signup-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(generateSignupPage());
-    return;
+    res.end(generateSignupPage()); return;
   }
 
   if (req.method === "GET" && url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(generateDashboardPage());
-    return;
+    res.end(generateDashboardPage()); return;
   }
 
   if (req.method === "GET" && url === "/integrations-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(generateIntegrationsPage());
-    return;
+    res.end(generateIntegrationsPage()); return;
+  }
+
+  if (req.method === "GET" && url === "/reset-password") {
+    const token = new URLSearchParams(req.url.split("?")[1] || "").get("token") || "";
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(generateResetPasswordPage(token)); return;
   }
 
   if (req.method === "GET" && req.url.startsWith("/page/")) {
@@ -767,8 +865,7 @@ const server = createServer(async (req, res) => {
     const biz = await database.collection("businesses").findOne({ slug });
     if (!biz) { res.writeHead(404); res.end("Page not found"); return; }
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(generateLandingPage(biz));
-    return;
+    res.end(generateLandingPage(biz)); return;
   }
 
   if (req.method === "POST" && url === "/signup") {
@@ -778,13 +875,13 @@ const server = createServer(async (req, res) => {
         const { name, email, password, businessName, plan } = JSON.parse(body);
         if (!name || !email || !password || !businessName) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "All fields are required" })); return; }
         if (password.length < 8) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Password must be at least 8 characters" })); return; }
-        const database  = await getDb();
-        const existing  = await database.collection("users").findOne({ email: email.toLowerCase() });
+        const database = await getDb();
+        const existing = await database.collection("users").findOne({ email: email.toLowerCase() });
         if (existing) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "An account with that email already exists" })); return; }
-        const token    = generateToken();
-        const slug     = generateSlug(businessName);
+        const token = generateToken();
+        const slug = generateSlug(businessName);
         const userPlan = plan && PLAN_CAPS[plan] ? plan : "free";
-        const user     = { name, email: email.toLowerCase(), password: hashPassword(password), token, businessName, slug, plan: userPlan, webhookUrl: "", createdAt: new Date() };
+        const user = { name, email: email.toLowerCase(), password: hashPassword(password), token, businessName, slug, plan: userPlan, webhookUrl: "", createdAt: new Date() };
         await database.collection("users").insertOne(user);
         await database.collection("businesses").updateOne({ slug }, { $setOnInsert: { businessName, slug, email: email.toLowerCase(), description: "", city: "", createdAt: new Date() } }, { upsert: true });
         sendWelcomeEmail(user).catch(console.error);
@@ -796,8 +893,7 @@ const server = createServer(async (req, res) => {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Server error. Please try again." }));
       }
-    });
-    return;
+    }); return;
   }
 
   if (req.method === "POST" && url === "/login") {
@@ -806,7 +902,7 @@ const server = createServer(async (req, res) => {
       try {
         const { email, password } = JSON.parse(body);
         const database = await getDb();
-        const user     = await database.collection("users").findOne({ email: email.toLowerCase() });
+        const user = await database.collection("users").findOne({ email: email.toLowerCase() });
         if (!user || user.password !== hashPassword(password)) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid email or password" })); return; }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, token: user.token, slug: user.slug, name: user.name }));
@@ -814,20 +910,64 @@ const server = createServer(async (req, res) => {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Server error" }));
       }
-    });
-    return;
+    }); return;
+  }
+
+  if (req.method === "POST" && url === "/forgot-password") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", async () => {
+      try {
+        const { email } = JSON.parse(body);
+        const database = await getDb();
+        const user = await database.collection("users").findOne({ email: email.toLowerCase() });
+        if (user) {
+          const resetToken = generateToken();
+          const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+          await database.collection("users").updateOne({ email: email.toLowerCase() }, { $set: { resetToken, resetExpires } });
+          sendPasswordResetEmail(email.toLowerCase(), resetToken).catch(console.error);
+        }
+        // Always return success to prevent email enumeration
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Server error" }));
+      }
+    }); return;
+  }
+
+  if (req.method === "POST" && url === "/reset-password") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", async () => {
+      try {
+        const { token, password } = JSON.parse(body);
+        if (!token || !password || password.length < 8) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Invalid request" })); return; }
+        const database = await getDb();
+        const user = await database.collection("users").findOne({ resetToken: token });
+        if (!user || !user.resetExpires || new Date() > new Date(user.resetExpires)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Reset link is invalid or expired." })); return;
+        }
+        await database.collection("users").updateOne({ resetToken: token }, { $set: { password: hashPassword(password) }, $unset: { resetToken: "", resetExpires: "" } });
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Server error" }));
+      }
+    }); return;
   }
 
   if (req.method === "GET" && url === "/dashboard") {
-    const token   = req.headers.authorization?.replace("Bearer ", "");
-    const user    = await getUserFromToken(token);
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(token);
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     const database = await getDb();
-    const now      = new Date();
+    const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const allLeads   = await database.collection("leads").find({ businessSlug: user.slug }).sort({ timestamp: -1 }).toArray();
+    const allLeads = await database.collection("leads").find({ businessSlug: user.slug }).sort({ timestamp: -1 }).toArray();
     const monthLeads = allLeads.filter(l => new Date(l.timestamp) >= monthStart);
-    const cap        = PLAN_CAPS[user.plan] || 50;
+    const cap = PLAN_CAPS[user.plan] || 50;
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ name: user.name, businessName: user.businessName, plan: user.plan || "free", cap, pageUrl: `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`, webhookUrl: user.webhookUrl || "", leadCount: allLeads.length, leadsThisMonth: monthLeads.length, leads: allLeads.slice(0, 50).map(l => ({ ...l, id: l._id ? l._id.toString() : '' })) }));
     return;
@@ -835,7 +975,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url === "/settings/webhook") {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const user  = await getUserFromToken(token);
+    const user = await getUserFromToken(token);
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
@@ -844,16 +984,15 @@ const server = createServer(async (req, res) => {
       await database.collection("users").updateOne({ token }, { $set: { webhookUrl: webhookUrl || "" } });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
-    });
-    return;
+    }); return;
   }
 
   if (req.method === "GET" && url === "/search-places") {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const user  = await getUserFromToken(token);
+    const user = await getUserFromToken(token);
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     const params = new URLSearchParams(req.url.split("?")[1] || "");
-    const query  = params.get("q");
+    const query = params.get("q");
     if (!query) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No query" })); return; }
     try {
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
@@ -891,13 +1030,12 @@ const server = createServer(async (req, res) => {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
-    });
-    return;
+    }); return;
   }
 
   if (req.method === "DELETE" && url.startsWith("/leads/")) {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const user  = await getUserFromToken(token);
+    const user = await getUserFromToken(token);
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     const id = url.replace("/leads/", "");
     try {
@@ -914,27 +1052,26 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url === "/checkout") {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    const user  = await getUserFromToken(token);
+    const user = await getUserFromToken(token);
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
       try {
         const { plan } = JSON.parse(body);
-        const session  = await createCheckoutSession(plan, user?.email);
+        const session = await createCheckoutSession(plan, user?.email);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ url: session.url }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
-    });
-    return;
+    }); return;
   }
 
   if (req.method === "POST" && url === "/register-business") {
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
       try {
-        const biz  = JSON.parse(body);
+        const biz = JSON.parse(body);
         const slug = generateSlug(biz.businessName);
         const database = await getDb();
         await database.collection("businesses").updateOne({ slug }, { $set: { ...biz, slug, updatedAt: new Date() } }, { upsert: true });
@@ -944,14 +1081,12 @@ const server = createServer(async (req, res) => {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
-    });
-    return;
+    }); return;
   }
 
   if (req.method === "GET" && url === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", service: "Leadly API" }));
-    return;
+    res.end(JSON.stringify({ status: "ok", service: "Leadly API" })); return;
   }
 
   res.writeHead(404); res.end("Not found");

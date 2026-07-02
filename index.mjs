@@ -155,6 +155,14 @@ function generateSignupPage() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Get Started Free — Leadly</title>
+<script>
+!function (w, d, t) {
+  w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var s=document.createElement("script");s.type="text/javascript",s.async=!0,s.src=r+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(s,a)};
+  ttq.load('D901Q0RC77U4748KI7O0');
+  ttq.page();
+  ttq.track('ViewContent');
+}(window, document, 'ttq');
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -214,9 +222,7 @@ input::placeholder{color:#555}
 
       <!-- SIGNUP -->
       <div id="signup-fields">
-        <div class="field"><label>Your name</label><input type="text" id="s-name" placeholder="Jane Smith" autocomplete="name"></div>
-        <div class="field"><label>Business name</label><input type="text" id="s-biz" placeholder="Smith Marketing" autocomplete="organization"></div>
-        <div class="field"><label>Email</label><input type="email" id="s-email" placeholder="jane@smithmarketing.com" autocomplete="email"></div>
+        <div class="field"><label>Email</label><input type="email" id="s-email" placeholder="you@yourbusiness.com" autocomplete="email"></div>
         <div class="field"><label>Password</label><input type="password" id="s-pass" placeholder="At least 8 characters" autocomplete="new-password"></div>
         <button class="btn" id="signup-btn" onclick="doSignup()">Create free account →</button>
         <div class="trust">
@@ -237,8 +243,8 @@ input::placeholder{color:#555}
     <div class="success-box" id="success-box">
       <div style="font-size:56px">🎉</div>
       <h2>You're in!</h2>
-      <p>Taking you to your dashboard…</p>
-      <a href="/dashboard-page">Go to dashboard →</a>
+      <p>One quick step to set up your page…</p>
+      <a href="/onboarding-page">Continue →</a>
     </div>
   </div>
 </div>
@@ -271,12 +277,10 @@ function hideError() { document.getElementById('error').style.display = 'none'; 
 
 async function doSignup() {
   hideError();
-  const name         = document.getElementById('s-name').value.trim();
-  const businessName = document.getElementById('s-biz').value.trim();
-  const email        = document.getElementById('s-email').value.trim();
-  const password     = document.getElementById('s-pass').value;
+  const email    = document.getElementById('s-email').value.trim();
+  const password = document.getElementById('s-pass').value;
 
-  if (!name || !businessName || !email || !password) { showError('Please fill in all fields.'); return; }
+  if (!email || !password) { showError('Please enter your email and a password.'); return; }
   if (password.length < 8) { showError('Password must be at least 8 characters.'); return; }
 
   const btn = document.getElementById('signup-btn');
@@ -286,11 +290,12 @@ async function doSignup() {
     const res  = await fetch(API + '/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, businessName, plan: urlPlan || 'free' })
+      body: JSON.stringify({ email, password, plan: urlPlan || 'free' })
     });
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('leadly_token', data.token); if(data.slug) localStorage.setItem('leadly_slug', data.slug);
+      if (window.ttq) ttq.track('CompleteRegistration');
       if (urlPlan && urlPlan !== 'free') {
         // Kick to Stripe checkout
         const ckRes  = await fetch(API + '/checkout', {
@@ -344,7 +349,7 @@ async function doLogin() {
 function showSuccess() {
   document.getElementById('form-section').style.display = 'none';
   document.getElementById('success-box').style.display  = 'block';
-  setTimeout(() => { window.location.href = '/dashboard-page'; }, 1500);
+  setTimeout(() => { window.location.href = '/onboarding-page'; }, 1200);
 }
 
 // Enter key support
@@ -353,6 +358,98 @@ document.addEventListener('keydown', e => {
   const signupVisible = document.getElementById('signup-fields').style.display !== 'none';
   if (signupVisible) doSignup(); else doLogin();
 });
+</script>
+</body>
+</html>`;
+}
+
+function generateOnboardingPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Set up your page — Leadly</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
+nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo span{color:#00e87a}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.box{width:100%;max-width:440px}
+.badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:6px 14px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
+h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;line-height:1.2}
+.sub{color:#888;font-size:15px;margin-bottom:32px}
+.field{margin-bottom:14px}
+label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
+input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'DM Sans',sans-serif}
+input:focus{border-color:rgba(0,232,122,0.5)}
+input::placeholder{color:#555}
+.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif}
+.btn:disabled{opacity:0.6;cursor:not-allowed}
+.error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
+.hint{color:#555;font-size:13px;margin-top:14px;text-align:center}
+</style>
+</head>
+<body>
+<nav><a href="https://useleadly.io" class="logo">Lead<span>ly</span></a></nav>
+<div class="main">
+  <div class="box">
+    <div class="badge">⚡ Last step</div>
+    <h1>Set up your lead page</h1>
+    <p class="sub">This creates your public link — the page you'll share to capture leads.</p>
+    <div id="error" class="error"></div>
+    <div class="field"><label>Your name</label><input type="text" id="o-name" placeholder="Jane Smith" autocomplete="name"></div>
+    <div class="field"><label>Business name</label><input type="text" id="o-biz" placeholder="Smith Marketing" autocomplete="organization"></div>
+    <button class="btn" id="o-btn" onclick="save()">Create my lead page →</button>
+    <div class="hint">Your link: useleadly.io/page/<span id="slug-preview">your-business</span></div>
+  </div>
+</div>
+<script>
+const API = 'https://leadly-backend-tgbl.onrender.com';
+const token = localStorage.getItem('leadly_token');
+if (!token) window.location.href = '/signup-page';
+
+document.getElementById('o-biz').addEventListener('input', function() {
+  const s = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'your-business';
+  document.getElementById('slug-preview').textContent = s;
+});
+
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function save() {
+  document.getElementById('error').style.display = 'none';
+  const name = document.getElementById('o-name').value.trim();
+  const biz  = document.getElementById('o-biz').value.trim();
+  if (!name || !biz) { showError('Please fill in both fields.'); return; }
+  const btn = document.getElementById('o-btn');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const res  = await fetch(API + '/update-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ name: name, businessName: biz })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (data.slug) localStorage.setItem('leadly_slug', data.slug);
+      window.location.href = '/dashboard-page';
+    } else {
+      showError(data.error || 'Something went wrong.');
+      btn.disabled = false; btn.textContent = 'Create my lead page →';
+    }
+  } catch (e) {
+    showError('Network error. Please try again.');
+    btn.disabled = false; btn.textContent = 'Create my lead page →';
+  }
+}
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Enter') save(); });
 </script>
 </body>
 </html>`;
@@ -468,6 +565,7 @@ async function init() {
   const res = await fetch(API + '/dashboard', { headers: { Authorization: 'Bearer ' + token } });
   if (res.status === 401) { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; return; }
   const d = await res.json();
+  if (d.onboarded === false) { window.location.href = '/onboarding-page'; return; }
   allLeads = d.leads || [];
   renderDashboard(d);
 }
@@ -930,6 +1028,13 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /onboarding-page ────────────────────────────────────────────────
+  if (req.method === "GET" && url === "/onboarding-page") {
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(generateOnboardingPage());
+    return;
+  }
+
   // ── GET /dashboard-page ─────────────────────────────────────────────────
   if (req.method === "GET" && url === "/dashboard-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
@@ -961,11 +1066,13 @@ const server = createServer(async (req, res) => {
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
       try {
-        const { name, email, password, businessName, plan } = JSON.parse(body);
-        if (!name || !email || !password || !businessName) {
+        const { email, password, plan } = JSON.parse(body);
+        if (!email || !password) {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "All fields are required" })); return;
+          res.end(JSON.stringify({ error: "Email and password are required" })); return;
         }
+        const name         = email.split("@")[0];
+        const businessName = name;
         if (password.length < 8) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: "Password must be at least 8 characters" })); return;
@@ -977,13 +1084,14 @@ const server = createServer(async (req, res) => {
           res.end(JSON.stringify({ error: "An account with that email already exists" })); return;
         }
         const token    = generateToken();
-        const slug     = generateSlug(businessName);
+        const slug     = (generateSlug(businessName) || "user") + "-" + Math.random().toString(36).slice(2, 6);
         const userPlan = plan && PLAN_CAPS[plan] ? plan : "free";
         const user     = {
           name, email: email.toLowerCase(),
           password: hashPassword(password),
           token, businessName, slug,
           plan: userPlan,
+          onboarded: false,
           webhookUrl: "",
           createdAt: new Date(),
         };
@@ -994,8 +1102,7 @@ const server = createServer(async (req, res) => {
           { $setOnInsert: { businessName, slug, email: email.toLowerCase(), description: "", city: "", createdAt: new Date() } },
           { upsert: true }
         );
-        // Send welcome email (non-blocking)
-        sendWelcomeEmail(user).catch(console.error);
+        // Welcome email is sent after onboarding, once the real slug exists
         // Notify admin
         fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -1013,6 +1120,49 @@ const server = createServer(async (req, res) => {
         console.error("Signup error:", err.message);
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Server error. Please try again." }));
+      }
+    });
+    return;
+  }
+
+  // ── POST /update-profile ─────────────────────────────────────────────────
+  if (req.method === "POST" && url === "/update-profile") {
+    let body = ""; req.on("data", c => body += c);
+    req.on("end", async () => {
+      try {
+        const token = req.headers.authorization?.replace("Bearer ", "");
+        const user  = await getUserFromToken(token);
+        if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+        const { name, businessName } = JSON.parse(body);
+        if (!name || !businessName) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Name and business name are required" })); return;
+        }
+        const database = await getDb();
+        let slug = generateSlug(businessName) || "my-business";
+        const clash = await database.collection("users").findOne({ slug, email: { $ne: user.email } });
+        if (clash) slug = slug + "-" + Math.random().toString(36).slice(2, 6);
+
+        await database.collection("users").updateOne(
+          { email: user.email },
+          { $set: { name, businessName, slug, onboarded: true } }
+        );
+        // Move business doc from temp slug to real slug
+        if (user.slug !== slug) await database.collection("businesses").deleteOne({ slug: user.slug });
+        await database.collection("businesses").updateOne(
+          { slug },
+          { $set: { businessName, slug, email: user.email },
+            $setOnInsert: { description: "", city: "", createdAt: new Date() } },
+          { upsert: true }
+        );
+        // Welcome email now that the real page link exists
+        sendWelcomeEmail({ ...user, name, businessName, slug }).catch(console.error);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, slug, url: `https://useleadly.io/page/${slug}` }));
+      } catch (err) {
+        console.error("update-profile error:", err.message);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Server error" }));
       }
     });
     return;
@@ -1056,6 +1206,7 @@ const server = createServer(async (req, res) => {
       name:          user.name,
       businessName:  user.businessName,
       plan:          user.plan || "free",
+      onboarded:     user.onboarded !== false,
       cap,
       pageUrl:       `https://useleadly.io/page/${user.slug}`,
       webhookUrl:    user.webhookUrl || "",

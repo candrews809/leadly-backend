@@ -290,7 +290,7 @@ async function doSignup() {
     });
     const data = await res.json();
     if (data.token) {
-      localStorage.setItem('leadly_token', data.token);
+      localStorage.setItem('leadly_token', data.token); if(data.slug) localStorage.setItem('leadly_slug', data.slug);
       if (urlPlan && urlPlan !== 'free') {
         // Kick to Stripe checkout
         const ckRes  = await fetch(API + '/checkout', {
@@ -396,6 +396,19 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 
 /* Search */
 .search-wrap{position:relative;margin-bottom:16px}
+.prospect-search-wrap{display:flex;gap:10px;margin-bottom:16px}
+.prospect-search-wrap input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.prospect-search-wrap input:focus{border-color:rgba(0,232,122,0.4)}
+.prospect-search-wrap input::placeholder{color:#555}
+.search-go{background:#00e87a;color:#000;border:none;padding:11px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.prospect-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.prospect-info .p-name{font-weight:600;font-size:15px;margin-bottom:4px}
+.prospect-info .p-addr{color:#888;font-size:13px;margin-bottom:2px}
+.prospect-info .p-phone{color:#666;font-size:13px}
+.add-lead-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0}
+.add-lead-btn:disabled{background:#1a4a2e;color:#4a8a5e;cursor:not-allowed}
+.prospect-empty{text-align:center;padding:40px;color:#555;font-size:14px}
+.searching{text-align:center;padding:30px;color:#888;font-size:14px}
 .search-wrap input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px 11px 40px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
 .search-wrap input:focus{border-color:rgba(0,232,122,0.4)}
 .search-wrap input::placeholder{color:#555}
@@ -508,13 +521,24 @@ function renderDashboard(d) {
       <h3>Recent leads</h3>
       <span style="color:#555;font-size:13px">\${allLeads.length} total</span>
     </div>
-    \${allLeads.length > 0 ? \`
     <div class="search-wrap">
-      <span class="search-icon">&#9906;</span>
-      <input type="text" placeholder="Search leads by name, email, phone..." oninput="searchLeads(this.value)" id="lead-search">
-    </div>\` : ''}
+      <span class="search-icon">&#128269;</span>
+      <input type="text" placeholder="Filter your leads by name, email, phone..." oninput="searchLeads(this.value)" id="lead-search">
+    </div>
     <div id="leads-list">\${leadsHtml}</div>
     <div class="no-results" id="no-results">No leads match your search.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>Find new leads</h3>
+      <span style="color:#555;font-size:13px">Search any business type + location</span>
+    </div>
+    <div class="prospect-search-wrap">
+      <input type="text" id="prospect-query" placeholder="e.g. auto repair shops Dallas TX" onkeydown="if(event.key==='Enter')findLeads()">
+      <button class="search-go" onclick="findLeads()">Search</button>
+    </div>
+    <div id="prospect-results"></div>
   </div>
 
 
@@ -559,6 +583,78 @@ async function upgrade() {
 }
 
 function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
+
+async function findLeads() {
+  const q = document.getElementById('prospect-query').value.trim();
+  if (!q) return;
+  const box = document.getElementById('prospect-results');
+  box.innerHTML = '<div class="searching">Searching...</div>';
+  try {
+    const res = await fetch(API + '/search-places?q=' + encodeURIComponent(q), {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      box.innerHTML = '<div class="prospect-empty">No results found. Try a different search.</div>';
+      return;
+    }
+    box.innerHTML = data.results.map((p, i) => {
+      const added = allLeads.some(l => l.name === p.name && l.address === p.address);
+      return \`<div class="prospect-card">
+        <div class="prospect-info">
+          <div class="p-name">\${p.name}</div>
+          <div class="p-addr">\${p.address || ''}</div>
+          \${p.phone ? \`<div class="p-phone">\${p.phone}</div>\` : ''}
+          \${p.rating ? \`<div class="p-phone">Rating: \${p.rating}/5</div>\` : ''}
+        </div>
+        <button class="add-lead-btn" id="add-\${i}" onclick="addProspect(\${i})" \${added ? 'disabled' : ''}>\${added ? 'Added' : 'Add lead'}</button>
+      </div>\`;
+    }).join('');
+    window._prospects = data.results;
+  } catch(e) {
+    box.innerHTML = '<div class="prospect-empty">Search failed. Please try again.</div>';
+  }
+}
+
+async function addProspect(i) {
+  const p = window._prospects[i];
+  const btn = document.getElementById('add-' + i);
+  btn.disabled = true; btn.textContent = 'Adding...';
+  try {
+    await fetch(API + '/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({
+        name: p.name,
+        email: '',
+        phone: p.phone || '',
+        address: p.address || '',
+        message: 'Added from lead search',
+        businessSlug: localStorage.getItem('leadly_slug') || 'get-leadly',
+        source: 'prospect_search'
+      })
+    });
+    btn.textContent = 'Added';
+    toast('Lead added!');
+    allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date() });
+    document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
+      const initial = (l.name || '?')[0].toUpperCase();
+      return \`<div class="lead-card" data-idx="\${idx}">
+        <div class="lead-avatar">\${initial}</div>
+        <div>
+          <div class="lead-name">\${l.name || 'Unknown'}</div>
+          <div class="lead-email">\${l.email || ''}</div>
+          \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
+          \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
+          <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+        </div>
+      </div>\`;
+    }).join('');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Add lead';
+    toast('Failed to add lead');
+  }
+}
 
 init();
 </script>
@@ -980,6 +1076,36 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
     });
+    return;
+  }
+
+
+  // ── GET /search-places ──────────────────────────────────────────────────
+  if (req.method === "GET" && url === "/search-places") {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user  = await getUserFromToken(token);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    const params = new URLSearchParams(req.url.split("?")[1] || "");
+    const query  = params.get("q");
+    if (!query) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No query" })); return; }
+    try {
+      const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+      const gUrl = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=" + encodeURIComponent(query) + "&key=" + apiKey;
+      const r = await fetch(gUrl);
+      const data = await r.json();
+      const results = (data.results || []).slice(0, 20).map(p => ({
+        name:    p.name,
+        address: p.formatted_address,
+        phone:   p.formatted_phone_number || "",
+        placeId: p.place_id,
+        rating:  p.rating,
+      }));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ results }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

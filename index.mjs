@@ -378,7 +378,9 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .upgrade-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif}
 .logout{color:#666;cursor:pointer;font-size:13px;background:none;border:none;font-family:'DM Sans',sans-serif}
 .logout:hover{color:#fff}
-.container{max-width:900px;margin:0 auto;padding:40px 24px}
+.container{max-width:1200px;margin:0 auto;padding:40px 24px}
+.leads-columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:860px){.leads-columns{grid-template-columns:1fr}}
 .welcome{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}
 .subtitle{color:#888;margin-bottom:32px}
 .plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}
@@ -516,6 +518,7 @@ function renderDashboard(d) {
     </div>
   </div>
 
+  <div class="leads-columns">
   <div class="section">
     <div class="section-header">
       <h3>Recent leads</h3>
@@ -540,7 +543,7 @@ function renderDashboard(d) {
     </div>
     <div id="prospect-results"></div>
   </div>
-
+  </div>
 
 </div>\`;
 }

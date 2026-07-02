@@ -53,7 +53,7 @@ async function createCheckoutSession(plan, userEmail) {
     mode: "subscription",
     "line_items[0][price]": priceId,
     "line_items[0][quantity]": "1",
-    success_url: "https://leadly-backend-tgbl.onrender.com/dashboard-page?success=true",
+    success_url: "https://useleadly.io/dashboard-page?success=true",
     cancel_url:  "https://useleadly.io/pricing",
   });
   if (userEmail) params.set("customer_email", userEmail);
@@ -121,12 +121,12 @@ async function sendWelcomeEmail(user) {
   <p style="color:#555;font-size:16px;margin:16px 0">Your free lead capture page is live and ready to share.</p>
   <div style="background:#f5f5f5;border-radius:12px;padding:20px;margin:24px 0">
     <p style="margin:0;font-size:14px;color:#666;margin-bottom:8px">Your lead page URL:</p>
-    <a href="https://leadly-backend-tgbl.onrender.com/page/${user.slug}" style="color:#00b85f;font-weight:700;font-size:16px">
-      leadly-backend-tgbl.onrender.com/page/${user.slug}
+    <a href="https://useleadly.io/page/${user.slug}" style="color:#00b85f;font-weight:700;font-size:16px">
+      useleadly.io/page/${user.slug}
     </a>
   </div>
   <p style="color:#555">Share this link on social media, in your email signature, or anywhere you want leads to come from.</p>
-  <a href="https://leadly-backend-tgbl.onrender.com/dashboard-page" style="display:inline-block;background:#00e87a;color:#080808;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Go to your dashboard →</a>
+  <a href="https://useleadly.io/dashboard-page" style="display:inline-block;background:#00e87a;color:#080808;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Go to your dashboard →</a>
   <p style="color:#aaa;font-size:12px;margin-top:32px">— Cole at Leadly</p>
 </div>`,
     }),
@@ -1057,7 +1057,7 @@ const server = createServer(async (req, res) => {
       businessName:  user.businessName,
       plan:          user.plan || "free",
       cap,
-      pageUrl:       `https://leadly-backend-tgbl.onrender.com/page/${user.slug}`,
+      pageUrl:       `https://useleadly.io/page/${user.slug}`,
       webhookUrl:    user.webhookUrl || "",
       leadCount:     allLeads.length,
       leadsThisMonth: monthLeads.length,
@@ -1165,7 +1165,7 @@ const server = createServer(async (req, res) => {
         const database = await getDb();
         await database.collection("businesses").updateOne({ slug }, { $set: { ...biz, slug, updatedAt: new Date() } }, { upsert: true });
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, url: `https://leadly-backend-tgbl.onrender.com/page/${slug}`, slug }));
+        res.end(JSON.stringify({ success: true, url: `https://useleadly.io/page/${slug}`, slug }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));

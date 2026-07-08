@@ -193,6 +193,10 @@ input::placeholder{color:#555}
 .divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:rgba(255,255,255,0.08)}
 .divider::before{left:0}.divider::after{right:0}
 .trust{display:flex;gap:20px;margin-top:24px;justify-content:center}
+.trust-bar{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:0 0 28px}
+.trust-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#c9c9c4;padding:8px 14px;border-radius:100px;font-size:13px;font-weight:500}
+.trust-pill span{color:#00e87a;font-weight:700}
+@media(max-width:520px){.trust-bar{gap:8px}.trust-pill{padding:6px 10px;font-size:12px}}
 .trust-item{display:flex;align-items:center;gap:6px;color:#666;font-size:13px}
 .trust-item span{color:#00e87a}
 .success-box{text-align:center;padding:40px 20px;display:none}
@@ -212,6 +216,11 @@ input::placeholder{color:#555}
       <div class="badge">✨ Free forever — no credit card</div>
       <h1>Get your free lead page</h1>
       <p class="sub">Set up in 60 seconds. Start capturing leads today.</p>
+      <div class="trust-bar">
+        <div class="trust-pill"><span>🔒</span> SSL encrypted</div>
+        <div class="trust-pill"><span>✓</span> Cancel anytime</div>
+        <div class="trust-pill"><span>⚡</span> Instant setup</div>
+      </div>
 
       <div class="tabs">
         <button class="tab active" onclick="switchTab('signup')">Create account</button>

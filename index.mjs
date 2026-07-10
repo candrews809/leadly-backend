@@ -344,7 +344,7 @@ async function doLogin() {
     const data = await res.json();
     if (data.token) {
       localStorage.setItem('leadly_token', data.token);
-      showSuccess();
+      window.location.href = '/dashboard-page';
     } else {
       showError(data.error || 'Invalid email or password.');
       btn.disabled = false; btn.textContent = 'Sign in →';

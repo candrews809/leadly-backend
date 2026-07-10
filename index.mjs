@@ -796,7 +796,8 @@ h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8p
 .subtitle{color:#888;font-size:15px;margin-bottom:40px}
 .int-section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;margin-bottom:20px}
 .int-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
-.int-icon{width:44px;height:44px;border-radius:10px;background:rgba(0,232,122,0.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.int-icon{width:44px;height:44px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:8px;box-sizing:border-box}
+.int-icon img,.int-icon svg{width:100%;height:100%;object-fit:contain}
 .int-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
 .int-desc{color:#888;font-size:13px;margin-top:2px}
 .field{margin-bottom:14px}
@@ -826,7 +827,7 @@ input::placeholder{color:#555}
 
   <div class="int-section">
     <div class="int-header">
-      <div class="int-icon">SF</div>
+      <div class="int-icon"><img src="https://cdn.simpleicons.org/salesforce/00A1E0" alt="Salesforce"></div>
       <div>
         <div class="int-title">Salesforce</div>
         <div class="int-desc">Send leads directly to your Salesforce CRM</div>
@@ -847,7 +848,7 @@ input::placeholder{color:#555}
 
   <div class="int-section">
     <div class="int-header">
-      <div class="int-icon">HS</div>
+      <div class="int-icon"><img src="https://cdn.simpleicons.org/hubspot/FF7A59" alt="HubSpot"></div>
       <div>
         <div class="int-title">HubSpot</div>
         <div class="int-desc">Send leads directly to your HubSpot CRM</div>
@@ -868,7 +869,7 @@ input::placeholder{color:#555}
 
   <div class="int-section">
     <div class="int-header">
-      <div class="int-icon">GHL</div>
+      <div class="int-icon"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#3B82F6" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path fill="#3B82F6" d="M13 7h-2v5.41l3.29 3.3 1.42-1.42L13 11.59z"/></svg></div>
       <div>
         <div class="int-title">GoHighLevel</div>
         <div class="int-desc">Send leads directly to your GoHighLevel account</div>
@@ -888,7 +889,7 @@ input::placeholder{color:#555}
 
   <div class="int-section">
     <div class="int-header">
-      <div class="int-icon">ZP</div>
+      <div class="int-icon"><img src="https://cdn.simpleicons.org/zapier/FF4A00" alt="Zapier"></div>
       <div>
         <div class="int-title">Zapier / Custom Webhook</div>
         <div class="int-desc">Connect to any app via Zapier or a custom webhook</div>

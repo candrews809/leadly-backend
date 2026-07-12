@@ -599,6 +599,9 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .lead-hidden{display:none}
 .empty{text-align:center;padding:60px;color:#555}
 .no-results{text-align:center;padding:40px;color:#555;font-size:14px;display:none}
+.lead-body{flex:1;min-width:0}
+.delete-lead-btn{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.delete-lead-btn:hover{color:#ff5555;background:rgba(255,85,85,0.1)}
 
 /* Integrations */
 .int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
@@ -654,13 +657,16 @@ function renderDashboard(d) {
         const initial = (l.name || '?')[0].toUpperCase();
         return \`<div class="lead-card" data-idx="\${i}">
           <div class="lead-avatar">\${initial}</div>
-          <div>
+          <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
-            <div class="lead-email">\${l.email || ''}</div>
-            \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
+            \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
+            \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
+            \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
+            \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
           </div>
+          <button class="delete-lead-btn" onclick="deleteLead('\${l._id}', this)" title="Delete lead">✕</button>
         </div>\`;
       }).join('');
 
@@ -762,6 +768,36 @@ async function upgrade() {
 
 function logout() { localStorage.removeItem('leadly_token'); window.location.href = '/signup-page'; }
 
+async function deleteLead(id, btn) {
+  if (!id || id === 'undefined') { toast('Cannot delete — missing lead ID'); return; }
+  if (!confirm('Delete this lead? This cannot be undone.')) return;
+  const card = btn.closest('.lead-card');
+  card.style.opacity = '0.4';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API + '/leads/' + id, {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (data.success) {
+      allLeads = allLeads.filter(l => String(l._id) !== String(id));
+      card.remove();
+      toast('Lead deleted');
+      const totalEl = document.querySelector('.section-header span');
+      if (totalEl) totalEl.textContent = allLeads.length + ' total';
+    } else {
+      card.style.opacity = '1';
+      btn.disabled = false;
+      toast('Failed to delete lead');
+    }
+  } catch (e) {
+    card.style.opacity = '1';
+    btn.disabled = false;
+    toast('Failed to delete lead');
+  }
+}
+
 async function findLeads() {
   const q = document.getElementById('prospect-query').value.trim();
   if (!q) return;
@@ -799,33 +835,51 @@ async function addProspect(i) {
   const btn = document.getElementById('add-' + i);
   btn.disabled = true; btn.textContent = 'Adding...';
   try {
-    await fetch(API + '/leads', {
+    // Text Search never returns phone/website — fetch real contact details first
+    let phone = p.phone || '';
+    let website = '';
+    if (p.placeId) {
+      try {
+        const dRes = await fetch(API + '/place-details?placeId=' + encodeURIComponent(p.placeId), {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const d = await dRes.json();
+        if (d.phone) phone = d.phone;
+        if (d.website) website = d.website;
+      } catch (e) { /* fall back to whatever we had */ }
+    }
+    const saveRes = await fetch(API + '/leads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
       body: JSON.stringify({
         name: p.name,
         email: '',
-        phone: p.phone || '',
+        phone: phone,
         address: p.address || '',
+        website: website,
         message: 'Added from lead search',
         businessSlug: localStorage.getItem('leadly_slug') || 'get-leadly',
         source: 'prospect_search'
       })
     });
+    const saveData = await saveRes.json();
     btn.textContent = 'Added';
     toast('Lead added!');
-    allLeads.unshift({ name: p.name, email: '', phone: p.phone || '', address: p.address, timestamp: new Date() });
+    allLeads.unshift({ _id: saveData.id, name: p.name, email: '', phone: phone, address: p.address, website: website, timestamp: new Date() });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();
       return \`<div class="lead-card" data-idx="\${idx}">
         <div class="lead-avatar">\${initial}</div>
-        <div>
+        <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
-          <div class="lead-email">\${l.email || ''}</div>
-          \${l.phone ? \`<div class="lead-meta">\${l.phone}</div>\` : ''}
+          \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
+          \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
+          \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
           \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
+          \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
+        <button class="delete-lead-btn" onclick="deleteLead('\${l._id}', this)" title="Delete lead">✕</button>
       </div>\`;
     }).join('');
   } catch(e) {
@@ -1341,6 +1395,36 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /place-details ──────────────────────────────────────────────────
+  // Text Search doesn't return phone/website — fetch full details for one place
+  // right before the user adds it as a lead.
+  if (req.method === "GET" && url === "/place-details") {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user  = await getUserFromToken(token);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    const params  = new URLSearchParams(req.url.split("?")[1] || "");
+    const placeId = params.get("placeId");
+    if (!placeId) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No placeId" })); return; }
+    try {
+      const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+      const fields = "formatted_phone_number,international_phone_number,website,formatted_address";
+      const gUrl = "https://maps.googleapis.com/maps/api/place/details/json?place_id=" + encodeURIComponent(placeId) + "&fields=" + fields + "&key=" + apiKey;
+      const r = await fetch(gUrl);
+      const data = await r.json();
+      const p = data.result || {};
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        phone:   p.formatted_phone_number || p.international_phone_number || "",
+        website: p.website || "",
+        address: p.formatted_address || "",
+      }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // ── POST /leads ──────────────────────────────────────────────────────────
   if (req.method === "POST" && url === "/leads") {
     let body = ""; req.on("data", c => body += c);
@@ -1348,20 +1432,41 @@ const server = createServer(async (req, res) => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date() };
         const database = await getDb();
-        await database.collection("leads").insertOne(lead);
+        const insertResult = await database.collection("leads").insertOne(lead);
         // Find business owner and notify
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
         const notifyTo = owner?.email || NOTIFY_EMAIL;
         sendLeadEmail(lead, notifyTo).catch(console.error);
         if (owner?.webhookUrl) fireWebhook(owner.webhookUrl, lead).catch(console.error);
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true }));
+        res.end(JSON.stringify({ success: true, id: insertResult.insertedId }));
       } catch (err) {
         console.error("Lead error:", err.message);
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));
       }
     });
+    return;
+  }
+
+  // ── DELETE /leads ────────────────────────────────────────────────────────
+  if (req.method === "DELETE" && url.startsWith("/leads/")) {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const user  = await getUserFromToken(token);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    const leadId = url.split("/leads/")[1];
+    try {
+      const database = await getDb();
+      const result = await database.collection("leads").deleteOne({
+        _id: new ObjectId(leadId),
+        businessSlug: user.slug   // scoped so users can only delete their own leads
+      });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, deleted: result.deletedCount }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

@@ -537,7 +537,24 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .logout:hover{color:#fff}
 .container{max-width:1200px;margin:0 auto;padding:40px 24px}
 .leads-columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-@media(max-width:860px){.leads-columns{grid-template-columns:1fr}}
+@media(max-width:860px){.leads-columns{grid-template-columns:1fr;gap:20px}}
+@media(max-width:640px){
+  nav{padding:14px 20px}
+  .container{padding:24px 16px}
+  .welcome{font-size:22px}
+  .subtitle{margin-bottom:24px}
+  .stats{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+  .stat-card{padding:16px}
+  .stat-num{font-size:28px;min-height:34px}
+  .section{padding:18px}
+  .url-box{flex-direction:column;align-items:stretch}
+  .url-text{width:100%}
+  .btn-sm,.btn-ghost{width:100%;text-align:center}
+  .section-header{flex-wrap:wrap;gap:6px}
+}
+@media(max-width:400px){
+  .stats{grid-template-columns:1fr}
+}
 .welcome{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}
 .subtitle{color:#888;margin-bottom:32px}
 .plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}

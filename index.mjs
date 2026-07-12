@@ -596,6 +596,9 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .lead-name{font-weight:600;margin-bottom:3px}
 .lead-email{color:#00e87a;font-size:14px;margin-bottom:2px}
 .lead-meta{color:#666;font-size:12px}
+a.lead-meta{display:block;text-decoration:none;margin-bottom:2px}
+.lead-link{color:#888;cursor:pointer;transition:color .15s}
+.lead-link:hover{color:#00e87a;text-decoration:underline}
 .lead-hidden{display:none}
 .empty{text-align:center;padding:60px;color:#555}
 .no-results{text-align:center;padding:40px;color:#555;font-size:14px;display:none}
@@ -660,8 +663,9 @@ function renderDashboard(d) {
           <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-            \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
-            \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
+            \${l.phone ? \`<a class="lead-meta lead-link" href="tel:\${l.phone.replace(/[^0-9+]/g,'')}">📞 \${l.phone}</a>\` : ''}
+            \${l.website ? \`<a class="lead-meta lead-link" href="\${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" rel="noopener">🔗 \${l.website}</a>\` : ''}
+            \${l.address ? \`<a class="lead-meta lead-link" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}" target="_blank" rel="noopener">📍 \${l.address}</a>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
             \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
@@ -770,7 +774,6 @@ function logout() { localStorage.removeItem('leadly_token'); window.location.hre
 
 async function deleteLead(id, btn) {
   if (!id || id === 'undefined') { toast('Cannot delete — missing lead ID'); return; }
-  if (!confirm('Delete this lead? This cannot be undone.')) return;
   const card = btn.closest('.lead-card');
   card.style.opacity = '0.4';
   btn.disabled = true;
@@ -873,9 +876,9 @@ async function addProspect(i) {
         <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-          \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
-          \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
-          \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
+          \${l.phone ? \`<a class="lead-meta lead-link" href="tel:\${l.phone.replace(/[^0-9+]/g,'')}">📞 \${l.phone}</a>\` : ''}
+          \${l.website ? \`<a class="lead-meta lead-link" href="\${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" rel="noopener">🔗 \${l.website}</a>\` : ''}
+          \${l.address ? \`<a class="lead-meta lead-link" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}" target="_blank" rel="noopener">📍 \${l.address}</a>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>

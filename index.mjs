@@ -596,9 +596,6 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .lead-name{font-weight:600;margin-bottom:3px}
 .lead-email{color:#00e87a;font-size:14px;margin-bottom:2px}
 .lead-meta{color:#666;font-size:12px}
-a.lead-meta{display:block;text-decoration:none;margin-bottom:2px}
-.lead-link{color:#888;cursor:pointer;transition:color .15s}
-.lead-link:hover{color:#00e87a;text-decoration:underline}
 .lead-hidden{display:none}
 .empty{text-align:center;padding:60px;color:#555}
 .no-results{text-align:center;padding:40px;color:#555;font-size:14px;display:none}
@@ -663,9 +660,8 @@ function renderDashboard(d) {
           <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-            \${l.phone ? \`<a class="lead-meta lead-link" href="tel:\${l.phone.replace(/[^0-9+]/g,'')}">📞 \${l.phone}</a>\` : ''}
-            \${l.website ? \`<a class="lead-meta lead-link" href="\${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" rel="noopener">🔗 \${l.website}</a>\` : ''}
-            \${l.address ? \`<a class="lead-meta lead-link" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}" target="_blank" rel="noopener">📍 \${l.address}</a>\` : ''}
+            \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
+            \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
             \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
@@ -774,6 +770,7 @@ function logout() { localStorage.removeItem('leadly_token'); window.location.hre
 
 async function deleteLead(id, btn) {
   if (!id || id === 'undefined') { toast('Cannot delete — missing lead ID'); return; }
+  if (!confirm('Delete this lead? This cannot be undone.')) return;
   const card = btn.closest('.lead-card');
   card.style.opacity = '0.4';
   btn.disabled = true;
@@ -876,9 +873,9 @@ async function addProspect(i) {
         <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-          \${l.phone ? \`<a class="lead-meta lead-link" href="tel:\${l.phone.replace(/[^0-9+]/g,'')}">📞 \${l.phone}</a>\` : ''}
-          \${l.website ? \`<a class="lead-meta lead-link" href="\${l.website.startsWith('http') ? l.website : 'https://' + l.website}" target="_blank" rel="noopener">🔗 \${l.website}</a>\` : ''}
-          \${l.address ? \`<a class="lead-meta lead-link" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}" target="_blank" rel="noopener">📍 \${l.address}</a>\` : ''}
+          \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
+          \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
+          \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
@@ -1050,14 +1047,16 @@ async function save(type, inputId) {
   toast('Saved!');
 }
 
-// Load existing webhook
+// Load existing webhooks
 async function loadSettings() {
   const res = await fetch(API + '/dashboard', { headers: { Authorization: 'Bearer ' + token } });
   if (res.status === 401) { window.location.href = '/signup-page'; return; }
   const d = await res.json();
-  if (d.webhookUrl) {
-    document.getElementById('custom-webhook').value = d.webhookUrl;
-  }
+  const w = d.webhooks || {};
+  if (w.salesforce)  document.getElementById('sf-webhook').value = w.salesforce;
+  if (w.hubspot)     document.getElementById('hs-webhook').value = w.hubspot;
+  if (w.gohighlevel) document.getElementById('ghl-webhook').value = w.gohighlevel;
+  if (w.custom)      document.getElementById('custom-webhook').value = w.custom;
 }
 loadSettings();
 </script>
@@ -1227,7 +1226,7 @@ const server = createServer(async (req, res) => {
           token, businessName, slug,
           plan: userPlan,
           onboarded: false,
-          webhookUrl: "",
+          webhooks: { salesforce: "", hubspot: "", gohighlevel: "", custom: "" },
           createdAt: new Date(),
         };
         await database.collection("users").insertOne(user);
@@ -1336,6 +1335,8 @@ const server = createServer(async (req, res) => {
     const allLeads   = await database.collection("leads").find({ businessSlug: user.slug }).sort({ timestamp: -1 }).toArray();
     const monthLeads = allLeads.filter(l => new Date(l.timestamp) >= monthStart);
     const cap        = PLAN_CAPS[user.plan] || 50;
+    // Legacy accounts only ever had a single `webhookUrl` field — treat that as their "custom" slot
+    const webhooks = user.webhooks || { salesforce: "", hubspot: "", gohighlevel: "", custom: user.webhookUrl || "" };
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({
       name:          user.name,
@@ -1344,7 +1345,7 @@ const server = createServer(async (req, res) => {
       onboarded:     user.onboarded !== false,
       cap,
       pageUrl:       `https://useleadly.io/page/${user.slug}`,
-      webhookUrl:    user.webhookUrl || "",
+      webhooks:      webhooks,
       leadCount:     allLeads.length,
       leadsThisMonth: monthLeads.length,
       leads:         allLeads.slice(0, 20),
@@ -1359,9 +1360,11 @@ const server = createServer(async (req, res) => {
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
-      const { webhookUrl } = JSON.parse(body);
+      const { webhookUrl, webhookType } = JSON.parse(body);
+      const validTypes = ["salesforce", "hubspot", "gohighlevel", "custom"];
+      const type = validTypes.includes(webhookType) ? webhookType : "custom";
       const database = await getDb();
-      await database.collection("users").updateOne({ token }, { $set: { webhookUrl: webhookUrl || "" } });
+      await database.collection("users").updateOne({ token }, { $set: { [`webhooks.${type}`]: webhookUrl || "" } });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
     });
@@ -1440,7 +1443,11 @@ const server = createServer(async (req, res) => {
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
         const notifyTo = owner?.email || NOTIFY_EMAIL;
         sendLeadEmail(lead, notifyTo).catch(console.error);
-        if (owner?.webhookUrl) fireWebhook(owner.webhookUrl, lead).catch(console.error);
+        if (owner?.webhooks) {
+          Object.values(owner.webhooks).forEach(hookUrl => {
+            if (hookUrl) fireWebhook(hookUrl, lead).catch(console.error);
+          });
+        }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, id: insertResult.insertedId }));
       } catch (err) {

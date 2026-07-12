@@ -400,6 +400,17 @@ input::placeholder{color:#555}
 .btn:disabled{opacity:0.6;cursor:not-allowed}
 .error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
 .hint{color:#555;font-size:13px;margin-top:14px;text-align:center}
+.success{display:none}
+.success h1{margin-bottom:12px}
+.link-box{background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.3);border-radius:10px;padding:18px 20px;margin:20px 0;word-break:break-all;font-size:16px;color:#00e87a;font-weight:600;text-align:center}
+.btn-secondary{width:100%;background:transparent;color:#f5f5f0;border:1px solid rgba(255,255,255,0.15);padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:10px;font-family:'DM Sans',sans-serif}
+.btn-secondary:hover{background:rgba(255,255,255,0.05)}
+.steps{margin:24px 0;padding:20px;background:rgba(255,255,255,0.03);border-radius:10px}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;font-size:14px;color:#c9c9c4;line-height:1.5}
+.step:last-child{margin-bottom:0}
+.step-num{flex-shrink:0;width:22px;height:22px;background:#00e87a;color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.copied{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#00e87a;color:#000;padding:12px 24px;border-radius:100px;font-weight:600;font-size:14px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:100}
+.copied.show{opacity:1}
 </style>
 </head>
 <body>
@@ -414,7 +425,22 @@ input::placeholder{color:#555}
     <div class="field"><label>Business name</label><input type="text" id="o-biz" placeholder="Smith Marketing" autocomplete="organization"></div>
     <button class="btn" id="o-btn" onclick="save()">Create my lead page →</button>
     <div class="hint">Your link: useleadly.io/page/<span id="slug-preview">your-business</span></div>
+    </div>
+
+    <div class="box success" id="success-box">
+      <div class="badge">🎉 You're live</div>
+      <h1>Your lead page is ready</h1>
+      <p class="sub">Copy your link below and share it — every visitor who fills out the form becomes a lead in your dashboard.</p>
+      <div class="link-box" id="live-link">useleadly.io/page/your-business</div>
+      <button class="btn" onclick="copyLink()">📋 Copy my link</button>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div>Paste your link in your Instagram/TikTok bio, or text it to prospects</div></div>
+        <div class="step"><div class="step-num">2</div><div>New leads show up instantly on your dashboard</div></div>
+        <div class="step"><div class="step-num">3</div><div>Follow up fast — hot leads convert best in the first hour</div></div>
+      </div>
+      <button class="btn-secondary" onclick="goToDashboard()">Go to dashboard →</button>
   </div>
+  <div class="copied" id="copied-toast">Link copied!</div>
 </div>
 <script>
 const API = 'https://leadly-backend-tgbl.onrender.com';
@@ -447,7 +473,7 @@ async function save() {
     const data = await res.json();
     if (data.success) {
       if (data.slug) localStorage.setItem('leadly_slug', data.slug);
-      window.location.href = '/dashboard-page';
+      showSuccessScreen(data.url || ('https://useleadly.io/page/' + data.slug));
     } else {
       showError(data.error || 'Something went wrong.');
       btn.disabled = false; btn.textContent = 'Create my lead page →';
@@ -459,6 +485,31 @@ async function save() {
 }
 
 document.addEventListener('keydown', function(e) { if (e.key === 'Enter') save(); });
+
+let liveLinkUrl = '';
+function showSuccessScreen(fullUrl) {
+  liveLinkUrl = fullUrl;
+  document.querySelector('.box:not(.success)').style.display = 'none';
+  const successBox = document.getElementById('success-box');
+  successBox.style.display = 'block';
+  document.getElementById('live-link').textContent = fullUrl.replace(/^https?:\/\//, '');
+}
+function copyLink() {
+  navigator.clipboard.writeText(liveLinkUrl).then(() => {
+    const t = document.getElementById('copied-toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = liveLinkUrl; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    const t = document.getElementById('copied-toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  });
+}
+function goToDashboard() { window.location.href = '/dashboard-page'; }
 </script>
 </body>
 </html>`;

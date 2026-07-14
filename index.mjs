@@ -492,7 +492,7 @@ function showSuccessScreen(fullUrl) {
   document.querySelector('.box:not(.success)').style.display = 'none';
   const successBox = document.getElementById('success-box');
   successBox.style.display = 'block';
-  document.getElementById('live-link').textContent = fullUrl.replace(/^https?:\/\//, '');
+  document.getElementById('live-link').textContent = fullUrl.replace(/^https?:\\/\\//, '');
 }
 function copyLink() {
   navigator.clipboard.writeText(liveLinkUrl).then(() => {

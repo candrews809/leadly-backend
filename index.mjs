@@ -199,6 +199,13 @@ input::placeholder{color:#555}
 @media(max-width:520px){.trust-bar{gap:8px}.trust-pill{padding:6px 10px;font-size:12px}}
 .trust-item{display:flex;align-items:center;gap:6px;color:#666;font-size:13px}
 .trust-item span{color:#00e87a}
+.price-hook{background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.25);border-radius:10px;padding:12px 16px;font-size:14px;color:#c9c9c4;margin-bottom:24px;text-align:center;line-height:1.5}
+.price-hook b{color:#00e87a}
+.price-hook s{color:#777}
+.benefits{margin:22px 0 0;padding:0;list-style:none}
+.benefits li{display:flex;gap:9px;align-items:flex-start;color:#a8a8a2;font-size:13.5px;line-height:1.45;margin-bottom:9px}
+.benefits li span{color:#00e87a;font-weight:700;flex-shrink:0}
+.proof-line{text-align:center;color:#666;font-size:12.5px;margin-top:18px}
 .success-box{text-align:center;padding:40px 20px;display:none}
 .success-box h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin:16px 0 8px}
 .success-box p{color:#888;margin-bottom:24px}
@@ -214,8 +221,9 @@ input::placeholder{color:#555}
   <div class="box">
     <div id="form-section">
       <div class="badge">✨ Free forever — no credit card</div>
-      <h1>Get your free lead page</h1>
-      <p class="sub">Set up in 60 seconds. Start capturing leads today.</p>
+      <h1>Turn your website visitors into paying clients</h1>
+      <p class="sub">Your own lead capture page, live in 60 seconds. Every lead goes straight to you.</p>
+      <div class="price-hook">Most lead services charge <s>$30–100 per lead</s>.<br><b>Leads from your Leadly page are free. Forever.</b></div>
       <div class="trust-bar">
         <div class="trust-pill"><span>🔒</span> SSL encrypted</div>
         <div class="trust-pill"><span>✓</span> Cancel anytime</div>
@@ -239,6 +247,12 @@ input::placeholder{color:#555}
           <div class="trust-item"><span>✓</span> Free forever</div>
           <div class="trust-item"><span>✓</span> Setup in 60s</div>
         </div>
+        <ul class="benefits">
+          <li><span>✓</span> A branded page that captures leads from your website 24/7 — even while you sleep</li>
+          <li><span>✓</span> Find local business leads with the built-in lead finder</li>
+          <li><span>✓</span> Send every lead to Salesforce, HubSpot, GoHighLevel, or Zapier automatically</li>
+        </ul>
+        <p class="proof-line">Built for freelancers, agencies & local businesses</p>
       </div>
 
       <!-- LOGIN -->

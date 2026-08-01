@@ -1,4 +1,4 @@
-// Leadly Backend — MongoDB edition
+\// Leadly Backend — MongoDB edition
 import { createServer } from "http";
 import { createHmac, randomBytes } from "crypto";
 import { MongoClient, ObjectId } from "mongodb";
@@ -786,7 +786,6 @@ function logout() { localStorage.removeItem('leadly_token'); window.location.hre
 
 async function deleteLead(id, btn) {
   if (!id || id === 'undefined') { toast('Cannot delete — missing lead ID'); return; }
-  if (!confirm('Delete this lead? This cannot be undone.')) return;
   const card = btn.closest('.lead-card');
   card.style.opacity = '0.4';
   btn.disabled = true;
@@ -1453,6 +1452,12 @@ const server = createServer(async (req, res) => {
     req.on("end", async () => {
       try {
         const lead = { ...JSON.parse(body), timestamp: new Date() };
+        // If an authenticated user is saving, trust the token over the client-sent slug
+        const authTok = req.headers.authorization?.replace("Bearer ", "");
+        if (authTok) {
+          const authUser = await getUserFromToken(authTok);
+          if (authUser?.slug) lead.businessSlug = authUser.slug;
+        }
         const database = await getDb();
         const insertResult = await database.collection("leads").insertOne(lead);
         // Find business owner and notify

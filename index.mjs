@@ -1,6 +1,6 @@
 // Leadly Backend — MongoDB edition
 import { createServer } from "http";
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { MongoClient, ObjectId } from "mongodb";
 
 // ─── MongoDB ───────────────────────────────────────────────────────────────
@@ -45,6 +45,11 @@ const PRICE_IDS = {
   pro:     "price_1TTCCyD9M5I52vZqYTNu6boC",
   agency:  "price_1TTCEQD9M5I52vZq9BSth9uA",
 };
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+// reverse map so the webhook can turn a price id back into a plan name
+const PLAN_BY_PRICE = Object.fromEntries(
+  Object.entries(PRICE_IDS).map(([plan, price]) => [price, plan])
+);
 
 async function createCheckoutSession(plan, userEmail) {
   const priceId = PRICE_IDS[plan] || PRICE_IDS.starter;
@@ -57,6 +62,10 @@ async function createCheckoutSession(plan, userEmail) {
     cancel_url:  "https://useleadly.io/pricing",
   });
   if (userEmail) params.set("customer_email", userEmail);
+  // stamp the plan so the webhook doesn't have to look up line items
+  params.set("metadata[plan]", plan);
+  params.set("subscription_data[metadata][plan]", plan);
+  if (userEmail) params.set("metadata[email]", userEmail);
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
     headers: {
@@ -1170,6 +1179,100 @@ const server = createServer(async (req, res) => {
 
   const url = req.url.split("?")[0];
 
+  // ── POST /stripe-webhook ─────────────────────────────────────────────────
+  // Stripe is the ONLY thing allowed to change a user's plan.
+  if (req.method === "POST" && url === "/stripe-webhook") {
+    const chunks = [];
+    req.on("data", c => chunks.push(c));
+    req.on("end", async () => {
+      const raw = Buffer.concat(chunks).toString("utf8");
+      try {
+        // ---- verify signature -------------------------------------------
+        if (!STRIPE_WEBHOOK_SECRET) {
+          console.error("Webhook: STRIPE_WEBHOOK_SECRET not set");
+          res.writeHead(500); res.end("no secret"); return;
+        }
+        const sigHeader = req.headers["stripe-signature"] || "";
+        const parts = {};
+        sigHeader.split(",").forEach(kv => {
+          const i = kv.indexOf("=");
+          if (i > 0) parts[kv.slice(0, i).trim()] = kv.slice(i + 1).trim();
+        });
+        const timestamp = parts.t;
+        const provided  = parts.v1;
+        if (!timestamp || !provided) {
+          res.writeHead(400); res.end("bad signature header"); return;
+        }
+        const expected = createHmac("sha256", STRIPE_WEBHOOK_SECRET)
+          .update(timestamp + "." + raw)
+          .digest("hex");
+        const a = Buffer.from(expected, "utf8");
+        const b = Buffer.from(provided, "utf8");
+        if (a.length !== b.length || !timingSafeEqual(a, b)) {
+          console.error("Webhook: signature mismatch");
+          res.writeHead(400); res.end("bad signature"); return;
+        }
+        // reject events older than 5 minutes (replay protection)
+        if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) {
+          res.writeHead(400); res.end("stale"); return;
+        }
+
+        const event    = JSON.parse(raw);
+        const obj      = event.data?.object || {};
+        const database = await getDb();
+
+        const setPlan = async (query, plan) => {
+          if (!query) return;
+          const r = await database.collection("users").updateOne(query, {
+            $set: { plan, planUpdatedAt: new Date() }
+          });
+          console.log("Webhook " + event.type + " -> plan=" + plan +
+                      " matched=" + r.matchedCount);
+        };
+
+        // find the account this event belongs to
+        const emailOf = o =>
+          (o.customer_email || o.customer_details?.email || o.metadata?.email || "").toLowerCase();
+
+        if (event.type === "checkout.session.completed") {
+          const plan  = obj.metadata?.plan;
+          const email = emailOf(obj);
+          if (plan && PLAN_CAPS[plan] && email) {
+            await setPlan({ email }, plan);
+            // remember the stripe customer so later events can find this user
+            if (obj.customer) {
+              await database.collection("users").updateOne(
+                { email }, { $set: { stripeCustomerId: obj.customer } }
+              );
+            }
+          } else {
+            console.error("Webhook: checkout completed but missing plan/email");
+          }
+        }
+
+        else if (event.type === "customer.subscription.updated") {
+          const priceId = obj.items?.data?.[0]?.price?.id;
+          const plan    = obj.metadata?.plan || PLAN_BY_PRICE[priceId];
+          const active  = ["active", "trialing"].includes(obj.status);
+          const query   = obj.customer ? { stripeCustomerId: obj.customer } : null;
+          if (query) await setPlan(query, active && plan ? plan : "free");
+        }
+
+        else if (event.type === "customer.subscription.deleted") {
+          const query = obj.customer ? { stripeCustomerId: obj.customer } : null;
+          if (query) await setPlan(query, "free");
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ received: true }));
+      } catch (err) {
+        console.error("Webhook error:", err.message);
+        res.writeHead(400); res.end("error");
+      }
+    });
+    return;
+  }
+
   // ── GET /signup-page ────────────────────────────────────────────────────
   if (req.method === "GET" && url === "/signup-page") {
     res.writeHead(200, { "Content-Type": "text/html" });
@@ -1234,7 +1337,8 @@ const server = createServer(async (req, res) => {
         }
         const token    = generateToken();
         const slug     = (generateSlug(businessName) || "user") + "-" + Math.random().toString(36).slice(2, 6);
-        const userPlan = plan && PLAN_CAPS[plan] ? plan : "free";
+        // Plan is NEVER taken from the client — only the Stripe webhook may upgrade.
+        const userPlan = "free";
         const user     = {
           name, email: email.toLowerCase(),
           password: hashPassword(password),

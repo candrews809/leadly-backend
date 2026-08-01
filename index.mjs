@@ -887,6 +887,16 @@ async function addProspect(i) {
       })
     });
     const saveData = await saveRes.json();
+    if (!saveRes.ok || saveData.error) {
+      btn.disabled = false;
+      btn.textContent = 'Add lead';
+      if (saveRes.status === 402) {
+        toast('Monthly limit reached (' + saveData.used + '/' + saveData.cap + ') — upgrade to add more');
+      } else {
+        toast(saveData.error || 'Could not add lead');
+      }
+      return;
+    }
     btn.textContent = 'Added';
     toast('Lead added!');
     allLeads.unshift({ _id: saveData.id, name: p.name, email: '', phone: phone, address: p.address, website: website, timestamp: new Date() });
@@ -1563,9 +1573,27 @@ const server = createServer(async (req, res) => {
           if (authUser?.slug) lead.businessSlug = authUser.slug;
         }
         const database = await getDb();
-        const insertResult = await database.collection("leads").insertOne(lead);
-        // Find business owner and notify
+        // Look the owner up FIRST so we can enforce their monthly plan cap
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
+        if (owner) {
+          const cap = PLAN_CAPS[owner.plan] || PLAN_CAPS.free;
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const usedThisMonth = await database.collection("leads").countDocuments({
+            businessSlug: owner.slug,
+            timestamp: { $gte: monthStart }
+          });
+          if (usedThisMonth >= cap) {
+            console.log("Cap reached for " + owner.slug + " (" + usedThisMonth + "/" + cap + ")");
+            res.writeHead(402, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({
+              error: "Monthly lead limit reached",
+              cap, used: usedThisMonth, plan: owner.plan || "free"
+            }));
+            return;
+          }
+        }
+        const insertResult = await database.collection("leads").insertOne(lead);
         const notifyTo = owner?.email || NOTIFY_EMAIL;
         sendLeadEmail(lead, notifyTo).catch(console.error);
         if (owner?.webhooks) {

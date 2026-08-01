@@ -606,6 +606,8 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 
 /* Lead cards */
 .lead-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;gap:16px;align-items:flex-start}
+.lead-link{color:#00e87a;text-decoration:none;border-bottom:1px solid rgba(0,232,122,0.3)}
+.lead-link:hover{border-bottom-color:#00e87a}
 .lead-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,232,122,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00e87a;font-size:16px;flex-shrink:0}
 .lead-name{font-weight:600;margin-bottom:3px}
 .lead-email{color:#00e87a;font-size:14px;margin-bottom:2px}
@@ -674,8 +676,8 @@ function renderDashboard(d) {
           <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-            \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
-            \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
+            \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+            \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
             \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
@@ -887,9 +889,9 @@ async function addProspect(i) {
         <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-          \${l.phone ? \`<div class="lead-meta">📞 \${l.phone}</div>\` : ''}
-          \${l.website ? \`<div class="lead-meta">🔗 \${l.website}</div>\` : ''}
-          \${l.address ? \`<div class="lead-meta">\${l.address}</div>\` : ''}
+          \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+          \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
+          \${l.address ? \`<div class="lead-meta"><a class="lead-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}">\${l.address}</a></div>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>

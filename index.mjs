@@ -965,7 +965,7 @@ input::placeholder{color:#555}
 
   <div class="int-section">
     <div class="int-header">
-      <div class="int-icon"><img src="https://cdn.simpleicons.org/salesforce/00A1E0" alt="Salesforce"></div>
+      <div class="int-icon"><svg viewBox="0 0 24 24" fill="#00A1E0" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%"><path d="M10 6a4 4 0 0 1 7.3 1.2A3.5 3.5 0 0 1 21 10.5 3.5 3.5 0 0 1 17.5 14H7a4 4 0 0 1-.6-7.95A4 4 0 0 1 10 6z"/></svg></div>
       <div>
         <div class="int-title">Salesforce</div>
         <div class="int-desc">Send leads directly to your Salesforce CRM</div>

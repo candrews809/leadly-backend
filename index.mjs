@@ -1,4 +1,4 @@
-\// Leadly Backend — MongoDB edition
+// Leadly Backend — MongoDB edition
 import { createServer } from "http";
 import { createHmac, randomBytes } from "crypto";
 import { MongoClient, ObjectId } from "mongodb";

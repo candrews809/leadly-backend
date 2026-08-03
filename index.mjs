@@ -678,7 +678,9 @@ async function init() {
   const d = await res.json();
   if (d.onboarded === false) { window.location.href = '/onboarding-page'; return; }
   allLeads = d.leads || [];
+  window._stats = { total: d.leadCount ?? 0, month: d.leadsThisMonth ?? 0, cap: d.cap ?? 50 };
   renderDashboard(d);
+  renderStats();
 }
 
 function renderDashboard(d) {
@@ -715,18 +717,7 @@ function renderDashboard(d) {
   <div class="welcome">Welcome back, \${d.name} 👋</div>
   <div class="subtitle">\${d.businessName}<span class="plan-badge">\${(d.plan||'free').toUpperCase()}</span></div>
 
-  <div class="stats">
-    <div class="stat-card"><div class="stat-num">\${d.leadCount ?? 0}</div><div class="stat-label">Total leads</div></div>
-    <div class="stat-card">
-      <div class="stat-num">\${d.cap === 999999 ? (d.leadsThisMonth ?? 0) : (d.leadsThisMonth ?? 0) + ' / ' + d.cap}</div>
-      <div class="stat-label">This month\${d.cap === 999999 ? '' : ' (plan limit)'}</div>
-      \${d.cap === 999999 ? '' : \`<div class="usage-bar"><div class="usage-fill" style="width:\${Math.min(100, Math.round(((d.leadsThisMonth ?? 0) / d.cap) * 100))}%;background:\${(d.leadsThisMonth ?? 0) / d.cap >= 0.8 ? '#ffb020' : '#00e87a'}"></div></div>\`}
-    </div>
-    <div class="stat-card">
-      <div class="stat-num">\${d.cap === 999999 ? '∞' : Math.max(0, d.cap - (d.leadsThisMonth ?? 0))}</div>
-      <div class="stat-label">Remaining</div>
-    </div>
-  </div>
+  <div class="stats" id="stats-row"></div>
 
   <div class="section">
     <h3>Your lead page</h3>
@@ -821,6 +812,7 @@ async function deleteLead(id, btn) {
       allLeads = allLeads.filter(l => String(l._id) !== String(id));
       card.remove();
       toast('Lead deleted');
+      bumpStats(-1);
       const totalEl = document.querySelector('.section-header span');
       if (totalEl) totalEl.textContent = allLeads.length + ' total';
     } else {
@@ -833,6 +825,38 @@ async function deleteLead(id, btn) {
     btn.disabled = false;
     toast('Failed to delete lead');
   }
+}
+
+// ── live stat cards ────────────────────────────────────────────────────────
+window._stats = { total: 0, month: 0, cap: 50 };
+
+function renderStats() {
+  const st = window._stats;
+  const unlimited = st.cap === 999999;
+  const pct = unlimited ? 0 : Math.min(100, Math.round((st.month / st.cap) * 100));
+  const warn = !unlimited && st.month / st.cap >= 0.8;
+  const box = document.getElementById('stats-row');
+  if (!box) return;
+  box.innerHTML =
+    '<div class="stat-card"><div class="stat-num">' + st.total + '</div>' +
+      '<div class="stat-label">Total leads</div></div>' +
+    '<div class="stat-card">' +
+      '<div class="stat-num">' + (unlimited ? st.month : st.month + ' / ' + st.cap) + '</div>' +
+      '<div class="stat-label">This month' + (unlimited ? '' : ' (plan limit)') + '</div>' +
+      (unlimited ? '' :
+        '<div class="usage-bar"><div class="usage-fill" style="width:' + pct +
+        '%;background:' + (warn ? '#ffb020' : '#00e87a') + '"></div></div>') +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="stat-num">' + (unlimited ? '∞' : Math.max(0, st.cap - st.month)) + '</div>' +
+      '<div class="stat-label">Remaining</div>' +
+    '</div>';
+}
+
+function bumpStats(delta) {
+  window._stats.total = Math.max(0, window._stats.total + delta);
+  window._stats.month = Math.max(0, window._stats.month + delta);
+  renderStats();
 }
 
 async function findLeads() {
@@ -947,6 +971,7 @@ async function addProspect(i) {
     }
     btn.textContent = 'Added';
     toast('Lead added!');
+    bumpStats(1);
     allLeads.unshift({ _id: saveData.id, name: p.name, email: '', phone: phone, address: p.address, website: website, timestamp: new Date() });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();

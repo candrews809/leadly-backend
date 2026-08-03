@@ -1013,7 +1013,7 @@ async function deleteLead(id, btn) {
       allLeads = allLeads.filter(l => String(l._id) !== String(id));
       card.remove();
       toast('Lead deleted');
-      bumpStats(-1);
+      // Counters track leads captured, not leads kept — deleting doesn't refund quota.
       const totalEl = document.querySelector('.section-header span');
       if (totalEl) totalEl.textContent = allLeads.length + ' total';
     } else {
@@ -1040,7 +1040,7 @@ function renderStats() {
   if (!box) return;
   box.innerHTML =
     '<div class="stat-card"><div class="stat-num">' + st.total + '</div>' +
-      '<div class="stat-label">Total leads</div></div>' +
+      '<div class="stat-label">Total captured</div></div>' +
     '<div class="stat-card">' +
       '<div class="stat-num">' + (unlimited ? st.month : st.month + ' / ' + st.cap) + '</div>' +
       '<div class="stat-label">This month' + (unlimited ? '' : ' (plan limit)') + '</div>' +
@@ -1487,6 +1487,35 @@ const PLAN_CAPS = { free: 50, starter: 150, pro: 250, agency: 999999 };
 // ─── HTTP Server ───────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
+
+// ── lifetime lead counters ─────────────────────────────────────────────────
+// Captured counts never go down. Deleting a lead removes it from the list but
+// does NOT refund monthly quota, otherwise the plan cap can be deleted around.
+function monthKey(d = new Date()) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+}
+
+// Older accounts predate the counters — seed them once from the leads they have.
+async function ensureCounters(database, user) {
+  if (user.stats && typeof user.stats.allTime === "number") return user.stats;
+  const start = new Date();
+  const mStart = new Date(start.getFullYear(), start.getMonth(), 1);
+  const allTime    = await database.collection("leads").countDocuments({ businessSlug: user.slug });
+  const monthCount = await database.collection("leads").countDocuments({
+    businessSlug: user.slug, timestamp: { $gte: mStart }
+  });
+  const stats = { allTime, monthCount, monthKey: monthKey() };
+  await database.collection("users").updateOne({ _id: user._id }, { $set: { stats } });
+  console.log("Seeded counters for " + user.slug + ": " + JSON.stringify(stats));
+  return stats;
+}
+
+// Returns this month's captured count, rolling over automatically.
+function currentMonthCount(stats) {
+  if (!stats) return 0;
+  return stats.monthKey === monthKey() ? (stats.monthCount || 0) : 0;
+}
+
 const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -1768,7 +1797,7 @@ const server = createServer(async (req, res) => {
     const now      = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const allLeads   = await database.collection("leads").find({ businessSlug: user.slug }).sort({ timestamp: -1 }).toArray();
-    const monthLeads = allLeads.filter(l => new Date(l.timestamp) >= monthStart);
+    const stats      = await ensureCounters(database, user);
     const cap        = PLAN_CAPS[user.plan] || 50;
     // Legacy accounts only ever had a single `webhookUrl` field — treat that as their "custom" slot
     const webhooks = user.webhooks || { salesforce: "", hubspot: "", gohighlevel: "", custom: user.webhookUrl || "" };
@@ -1781,8 +1810,9 @@ const server = createServer(async (req, res) => {
       cap,
       pageUrl:       `https://useleadly.io/page/${user.slug}`,
       webhooks:      webhooks,
-      leadCount:     allLeads.length,
-      leadsThisMonth: monthLeads.length,
+      leadCount:      stats.allTime || 0,        // lifetime captured, never decreases
+      leadsThisMonth: currentMonthCount(stats),  // counts against the plan cap
+      storedLeads:    allLeads.length,           // how many are still in the list
       leads:         allLeads.slice(0, 20),
     }));
     return;
@@ -1997,24 +2027,33 @@ const server = createServer(async (req, res) => {
         // Look the owner up FIRST so we can enforce their monthly plan cap
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
         if (owner) {
-          const cap = PLAN_CAPS[owner.plan] || PLAN_CAPS.free;
-          const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const usedThisMonth = await database.collection("leads").countDocuments({
-            businessSlug: owner.slug,
-            timestamp: { $gte: monthStart }
-          });
-          if (usedThisMonth >= cap) {
-            console.log("Cap reached for " + owner.slug + " (" + usedThisMonth + "/" + cap + ")");
+          const stats = await ensureCounters(database, owner);
+          const cap   = PLAN_CAPS[owner.plan] || PLAN_CAPS.free;
+          const used  = currentMonthCount(stats);
+          if (used >= cap) {
+            console.log("Cap reached for " + owner.slug + " (" + used + "/" + cap + ")");
             res.writeHead(402, { "Content-Type": "application/json" });
             res.end(JSON.stringify({
               error: "Monthly lead limit reached",
-              cap, used: usedThisMonth, plan: owner.plan || "free"
+              cap, used, plan: owner.plan || "free"
             }));
             return;
           }
         }
         const insertResult = await database.collection("leads").insertOne(lead);
+        if (owner) {
+          // Count the capture. New month -> start the monthly tally at 1.
+          const key   = monthKey();
+          const stats = owner.stats || { allTime: 0, monthCount: 0, monthKey: key };
+          const sameMonth = stats.monthKey === key;
+          await database.collection("users").updateOne({ _id: owner._id }, {
+            $set: {
+              "stats.allTime":    (stats.allTime || 0) + 1,
+              "stats.monthCount": sameMonth ? (stats.monthCount || 0) + 1 : 1,
+              "stats.monthKey":   key
+            }
+          });
+        }
         const notifyTo = owner?.email || NOTIFY_EMAIL;
         sendLeadEmail(lead, notifyTo).catch(console.error);
         if (owner?.webhooks) {

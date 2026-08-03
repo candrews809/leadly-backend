@@ -848,6 +848,18 @@ h1,h2,h3{letter-spacing:-0.028em}
   #stats-row .stat-card:nth-child(2){grid-column:1 / -1;border-bottom:1px solid rgba(255,255,255,0.06)}
   #stats-row .stat-card:nth-child(1){border-left:none}
 }
+
+
+/* ── nav links (matches useleadly.io) ─────────────────────────────── */
+nav{position:sticky;top:0;z-index:100;background:rgba(10,10,12,0.86);backdrop-filter:blur(16px)}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{
+  font-size:0.9rem;color:#9a9a9a;text-decoration:none;
+  letter-spacing:-0.006em;transition:color .2s ease;white-space:nowrap;
+}
+.nav-links a:hover{color:#f5f5f0}
+.nav-links a.is-current{color:#f5f5f0}
+@media (max-width:900px){ .nav-links{display:none} }
 </style>
 </head>
 <body>
@@ -907,6 +919,12 @@ function renderDashboard(d) {
   document.getElementById('app').innerHTML = \`
 <nav>
   <a href="https://useleadly.io" class="logo">Lead<span>ly</span></a>
+  <div class="nav-links">
+    <a href="https://useleadly.io/#how-it-works">How it works</a>
+    <a href="https://useleadly.io/#features">Features</a>
+    <a href="https://useleadly.io/#pricing">Pricing</a>
+    <a href="/dashboard-page" class="is-current">Dashboard</a>
+  </div>
   <div class="nav-right">
     \${d.plan === 'free' ? \`<button class="upgrade-btn" onclick="upgrade()">Upgrade</button>\` : ''}
     <a href="\${PORTAL}" target="_blank" class="nav-btn">Manage Subscription</a>

@@ -1511,10 +1511,36 @@ const server = createServer(async (req, res) => {
     if (!query) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No query" })); return; }
     try {
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-      const gUrl = "https://maps.googleapis.com/maps/api/place/textsearch/json?query=" + encodeURIComponent(query) + "&key=" + apiKey;
-      const r = await fetch(gUrl);
-      const data = await r.json();
-      const results = (data.results || []).slice(0, 20).map(p => ({
+      const base   = "https://maps.googleapis.com/maps/api/place/textsearch/json";
+      const sleep  = ms => new Promise(r => setTimeout(r, ms));
+
+      // Google returns 20 per page and allows up to 3 pages (60 results).
+      // next_page_token needs a moment before it becomes valid.
+      let all = [];
+      let pageToken = null;
+      for (let page = 0; page < 3; page++) {
+        const gUrl = pageToken
+          ? base + "?pagetoken=" + encodeURIComponent(pageToken) + "&key=" + apiKey
+          : base + "?query=" + encodeURIComponent(query) + "&key=" + apiKey;
+        const r = await fetch(gUrl);
+        const data = await r.json();
+        if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+          console.error("Places error:", data.status, data.error_message || "");
+          break;
+        }
+        all = all.concat(data.results || []);
+        pageToken = data.next_page_token || null;
+        if (!pageToken) break;
+        await sleep(2000);   // token is not valid immediately
+      }
+
+      // de-dupe by place_id in case pages overlap
+      const seen = new Set();
+      const results = all.filter(p => {
+        if (!p.place_id || seen.has(p.place_id)) return false;
+        seen.add(p.place_id);
+        return true;
+      }).map(p => ({
         name:    p.name,
         address: p.formatted_address,
         phone:   p.formatted_phone_number || "",

@@ -1519,11 +1519,25 @@ const server = createServer(async (req, res) => {
       let all = [];
       let pageToken = null;
       for (let page = 0; page < 3; page++) {
-        const gUrl = pageToken
-          ? base + "?pagetoken=" + encodeURIComponent(pageToken) + "&key=" + apiKey
-          : base + "?query=" + encodeURIComponent(query) + "&key=" + apiKey;
-        const r = await fetch(gUrl);
-        const data = await r.json();
+        let data = null;
+        // A fresh next_page_token is not valid instantly. Google answers
+        // INVALID_REQUEST until it is ready, so retry with a longer wait.
+        for (let attempt = 0; attempt < 4; attempt++) {
+          const gUrl = pageToken
+            ? base + "?pagetoken=" + encodeURIComponent(pageToken) + "&key=" + apiKey
+            : base + "?query=" + encodeURIComponent(query) + "&key=" + apiKey;
+          const r = await fetch(gUrl);
+          data = await r.json();
+          if (data.status === "INVALID_REQUEST" && pageToken) {
+            console.log("Places: token not ready, retry " + (attempt + 1));
+            await sleep(1500 * (attempt + 1));
+            continue;
+          }
+          break;
+        }
+        console.log("Places page " + (page + 1) + ": status=" + data.status +
+                    " got=" + (data.results || []).length +
+                    " nextToken=" + (data.next_page_token ? "yes" : "no"));
         if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
           console.error("Places error:", data.status, data.error_message || "");
           break;
@@ -1531,8 +1545,9 @@ const server = createServer(async (req, res) => {
         all = all.concat(data.results || []);
         pageToken = data.next_page_token || null;
         if (!pageToken) break;
-        await sleep(2000);   // token is not valid immediately
+        await sleep(2500);
       }
+      console.log("Places total collected: " + all.length + " for query: " + query);
 
       // de-dupe by place_id in case pages overlap
       const seen = new Set();

@@ -621,6 +621,9 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .load-more:hover{background:rgba(0,232,122,0.18)}
 .load-more:disabled{opacity:.6;cursor:default}
 .prospect-count{font-size:12px;color:#888;margin-bottom:8px}
+.find-email-btn{margin-top:6px;padding:5px 10px;font-size:12px;background:rgba(0,232,122,0.08);color:#00e87a;border:1px solid rgba(0,232,122,0.25);border-radius:7px;cursor:pointer}
+.find-email-btn:hover{background:rgba(0,232,122,0.16)}
+.find-email-btn:disabled{opacity:.5;cursor:default;color:#888;border-color:rgba(255,255,255,0.12);background:transparent}
 .usage-fill{height:100%;border-radius:99px;transition:width .3s ease}
 .lead-link:hover{border-bottom-color:#00e87a}
 .lead-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,232,122,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00e87a;font-size:16px;flex-shrink:0}
@@ -696,7 +699,8 @@ function renderDashboard(d) {
             \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
             \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
-            \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
+            \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">✉︎ Find email</button>\` : ''}
+          \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
           </div>
           <button class="delete-lead-btn" onclick="deleteLead('\${l._id}', this)" title="Delete lead">✕</button>
@@ -859,6 +863,35 @@ function bumpStats(delta) {
   renderStats();
 }
 
+
+async function findEmail(id) {
+  const btn = document.getElementById('fe-' + id);
+  if (btn) { btn.disabled = true; btn.textContent = 'Searching…'; }
+  try {
+    const res  = await fetch(API + '/leads/' + id + '/find-email', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (data.email) {
+      const lead = allLeads.find(l => String(l._id) === String(id));
+      if (lead) lead.email = data.email;
+      if (btn) {
+        const row = document.createElement('div');
+        row.className = 'lead-email';
+        row.textContent = data.email;
+        btn.replaceWith(row);
+      }
+      toast('Found ' + data.email);
+    } else {
+      if (btn) { btn.disabled = true; btn.textContent = 'No email found'; }
+      toast(data.reason || 'No email found on their site');
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = '✉︎ Find email'; }
+    toast('Lookup failed');
+  }
+}
+
 async function findLeads() {
   const q = document.getElementById('prospect-query').value.trim();
   if (!q) return;
@@ -985,6 +1018,7 @@ async function addProspect(i) {
           \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
           \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
           \${l.address ? \`<div class="lead-meta"><a class="lead-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}">\${l.address}</a></div>\` : ''}
+          \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">✉︎ Find email</button>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
@@ -1554,6 +1588,101 @@ const server = createServer(async (req, res) => {
       leadsThisMonth: monthLeads.length,
       leads:         allLeads.slice(0, 20),
     }));
+    return;
+  }
+
+
+  // ── POST /leads/:id/find-email ──────────────────────────────────────────
+  // Best-effort: fetch the lead's website and look for a contact address.
+  if (req.method === "POST" && url.startsWith("/leads/") && url.endsWith("/find-email")) {
+    const tok  = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(tok);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    const leadId = url.split("/")[2];
+    try {
+      const database = await getDb();
+      const lead = await database.collection("leads").findOne({
+        _id: new ObjectId(leadId), businessSlug: user.slug
+      });
+      if (!lead)          { res.writeHead(404, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Lead not found" })); return; }
+      if (!lead.website)  { res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ email: "", reason: "no website on file" })); return; }
+
+      let site = String(lead.website).trim();
+      if (!/^https?:\/\//i.test(site)) site = "https://" + site;
+      let host = "";
+      try { host = new URL(site).hostname; } catch { 
+        res.writeHead(200, { "Content-Type": "application/json" }); res.end(JSON.stringify({ email: "", reason: "bad website url" })); return;
+      }
+      // Never let a stored URL point us at internal infrastructure
+      if (/^(localhost$|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2[0-9]|3[01])\.|\[|0\.)/i.test(host)) {
+        res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Blocked host" })); return;
+      }
+
+      const JUNK        = /\.(png|jpe?g|gif|svg|webp|css|js|woff2?)$/i;
+      const BAD_DOMAINS = /(sentry\.|wixpress|example\.com|godaddy|squarespace|schema\.org|w3\.org|yourdomain|domain\.com)/i;
+      const BAD_LOCAL   = /^(no-?reply|donotreply|postmaster|abuse|webmaster)@/i;
+
+      const grab = async (target) => {
+        const ctl = new AbortController();
+        const t   = setTimeout(() => ctl.abort(), 6000);
+        try {
+          const r = await fetch(target, {
+            signal: ctl.signal,
+            redirect: "follow",
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; LeadlyBot/1.0)" }
+          });
+          if (!r.ok) return "";
+          const ct = r.headers.get("content-type") || "";
+          if (!ct.includes("html")) return "";
+          return (await r.text()).slice(0, 400000);
+        } catch { return ""; }
+        finally { clearTimeout(t); }
+      };
+
+      const pull = (html) => {
+        const found = new Set();
+        for (const m of html.matchAll(/mailto:([^"'?>\s]+)/gi)) found.add(m[1]);
+        for (const m of html.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)) found.add(m[0]);
+        return [...found]
+          .map(e => e.trim().toLowerCase().replace(/[.,;:)]+$/, ""))
+          .filter(e => e.includes("@") && e.length < 80 &&
+                       !JUNK.test(e) && !BAD_DOMAINS.test(e) && !BAD_LOCAL.test(e));
+      };
+
+      // homepage first, then a contact page if nothing turned up
+      let emails = pull(await grab(site));
+      if (emails.length === 0) {
+        for (const path of ["/contact", "/contact-us", "/about"]) {
+          emails = pull(await grab(site.replace(/\/$/, "") + path));
+          if (emails.length) break;
+        }
+      }
+
+      const bare = host.replace(/^www\./, "");
+      const pref = /^(info|contact|hello|sales|office|admin|service)@/i;
+      emails.sort((a, b) => {
+        const ao = a.endsWith("@" + bare) ? 0 : 1, bo = b.endsWith("@" + bare) ? 0 : 1;
+        if (ao !== bo) return ao - bo;
+        const ap = pref.test(a) ? 0 : 1, bp = pref.test(b) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        return a.length - b.length;
+      });
+
+      const email = emails[0] || "";
+      if (email) {
+        await database.collection("leads").updateOne(
+          { _id: new ObjectId(leadId), businessSlug: user.slug },
+          { $set: { email, emailSource: "website" } }
+        );
+      }
+      console.log("find-email " + host + " -> " + (email || "none"));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ email, reason: email ? "" : "no address found on site" }));
+    } catch (err) {
+      console.error("find-email error:", err.message);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
     return;
   }
 

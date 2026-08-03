@@ -616,6 +616,8 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 /* Lead cards */
 .lead-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;gap:16px;align-items:flex-start}
 .lead-link{color:#00e87a;text-decoration:none;border-bottom:1px solid rgba(0,232,122,0.3)}
+.usage-bar{margin-top:10px;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.usage-fill{height:100%;border-radius:99px;transition:width .3s ease}
 .lead-link:hover{border-bottom-color:#00e87a}
 .lead-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,232,122,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00e87a;font-size:16px;flex-shrink:0}
 .lead-name{font-weight:600;margin-bottom:3px}
@@ -711,8 +713,15 @@ function renderDashboard(d) {
 
   <div class="stats">
     <div class="stat-card"><div class="stat-num">\${d.leadCount ?? 0}</div><div class="stat-label">Total leads</div></div>
-    <div class="stat-card"><div class="stat-num">\${d.leadsThisMonth ?? 0}</div><div class="stat-label">This month</div></div>
-    <div class="stat-card"><div class="stat-num">\${d.cap === 999999 ? '∞' : d.cap}</div><div class="stat-label">Monthly cap</div></div>
+    <div class="stat-card">
+      <div class="stat-num">\${d.cap === 999999 ? (d.leadsThisMonth ?? 0) : (d.leadsThisMonth ?? 0) + ' / ' + d.cap}</div>
+      <div class="stat-label">This month\${d.cap === 999999 ? '' : ' (plan limit)'}</div>
+      \${d.cap === 999999 ? '' : \`<div class="usage-bar"><div class="usage-fill" style="width:\${Math.min(100, Math.round(((d.leadsThisMonth ?? 0) / d.cap) * 100))}%;background:\${(d.leadsThisMonth ?? 0) / d.cap >= 0.8 ? '#ffb020' : '#00e87a'}"></div></div>\`}
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">\${d.cap === 999999 ? '∞' : Math.max(0, d.cap - (d.leadsThisMonth ?? 0))}</div>
+      <div class="stat-label">Remaining</div>
+    </div>
   </div>
 
   <div class="section">

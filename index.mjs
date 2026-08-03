@@ -934,6 +934,7 @@ async function addProspect(i) {
     // Text Search never returns phone/website — fetch real contact details first
     let phone = p.phone || '';
     let website = '';
+    let address = p.address || '';
     if (p.placeId) {
       try {
         const dRes = await fetch(API + '/place-details?placeId=' + encodeURIComponent(p.placeId), {
@@ -942,6 +943,7 @@ async function addProspect(i) {
         const d = await dRes.json();
         if (d.phone) phone = d.phone;
         if (d.website) website = d.website;
+        if (d.address) address = d.address;
       } catch (e) { /* fall back to whatever we had */ }
     }
     const saveRes = await fetch(API + '/leads', {
@@ -951,7 +953,7 @@ async function addProspect(i) {
         name: p.name,
         email: '',
         phone: phone,
-        address: p.address || '',
+        address: address,
         website: website,
         message: 'Added from lead search',
         businessSlug: localStorage.getItem('leadly_slug') || 'get-leadly',
@@ -972,7 +974,7 @@ async function addProspect(i) {
     btn.textContent = 'Added';
     toast('Lead added!');
     bumpStats(1);
-    allLeads.unshift({ _id: saveData.id, name: p.name, email: '', phone: phone, address: p.address, website: website, timestamp: new Date() });
+    allLeads.unshift({ _id: saveData.id, name: p.name, email: '', phone: phone, address: address, website: website, timestamp: new Date() });
     document.getElementById('leads-list').innerHTML = allLeads.map((l, idx) => {
       const initial = (l.name || '?')[0].toUpperCase();
       return \`<div class="lead-card" data-idx="\${idx}">

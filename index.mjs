@@ -16,7 +16,7 @@ async function getDb() {
   await db.collection("users").createIndex({ email: 1 }, { unique: true });
   await db.collection("users").createIndex({ token: 1 });
   await db.collection("leads").createIndex({ businessSlug: 1 });
-  console.log("✅ MongoDB connected");
+  console.log("MongoDB connected");
   return db;
 }
 
@@ -92,11 +92,11 @@ async function sendLeadEmail(lead, notifyTo) {
     body: JSON.stringify({
       from: "Leadly <onboarding@resend.dev>",
       to,
-      subject: `🎯 New Lead: ${lead.name} from ${lead.business || "your page"}`,
+      subject: `New lead: ${lead.name} from ${lead.business || "your page"}`,
       html: `
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
   <div style="background:#00e87a;padding:20px;border-radius:12px 12px 0 0">
-    <h1 style="color:#080808;margin:0;font-size:24px">🎯 New Lead Captured!</h1>
+    <h1 style="color:#080808;margin:0;font-size:24px">New lead captured</h1>
   </div>
   <div style="background:#f5f5f5;padding:24px;border-radius:0 0 12px 12px">
     <table style="width:100%;border-collapse:collapse">
@@ -123,10 +123,10 @@ async function sendWelcomeEmail(user) {
     body: JSON.stringify({
       from: "Cole at Leadly <onboarding@resend.dev>",
       to: user.email,
-      subject: "Your Leadly page is ready 🎉",
+      subject: "Your Leadly page is ready",
       html: `
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
-  <h1 style="font-size:28px;font-weight:800">Welcome to Leadly, ${user.name}! 👋</h1>
+  <h1 style="font-size:28px;font-weight:800">Welcome to Leadly, ${user.name}</h1>
   <p style="color:#555;font-size:16px;margin:16px 0">Your free lead capture page is live and ready to share.</p>
   <div style="background:#f5f5f5;border-radius:12px;padding:20px;margin:24px 0">
     <p style="margin:0;font-size:14px;color:#666;margin-bottom:8px">Your lead page URL:</p>
@@ -172,29 +172,29 @@ function generateSignupPage() {
   ttq.track('ViewContent');
 }(window, document, 'ttq');
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
+body{font-family:'Inter',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
 nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
 .logo span{color:#00e87a}
 .back{color:#888;text-decoration:none;font-size:14px}
 .back:hover{color:#fff}
 .main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
 .box{width:100%;max-width:440px}
 .badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:6px 14px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
-h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;line-height:1.2}
+h1{font-family:'Archivo',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;line-height:1.2}
 .sub{color:#888;font-size:15px;margin-bottom:32px}
 .tabs{display:flex;gap:8px;margin-bottom:24px;background:rgba(255,255,255,0.05);padding:4px;border-radius:10px}
-.tab{flex:1;padding:9px;border-radius:7px;border:none;background:transparent;color:#888;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.tab{flex:1;padding:9px;border-radius:7px;border:none;background:transparent;color:#888;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;transition:all .15s}
 .tab.active{background:#00e87a;color:#000;font-weight:700}
 .field{margin-bottom:14px}
 label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'DM Sans',sans-serif;transition:border-color .15s}
+input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'Inter',sans-serif;transition:border-color .15s}
 input:focus{border-color:rgba(0,232,122,0.5)}
 input::placeholder{color:#555}
-.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif;transition:background .15s}
+.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'Inter',sans-serif;transition:background .15s}
 .btn:hover{background:#00c96a}
 .btn:disabled{opacity:0.6;cursor:not-allowed}
 .error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
@@ -216,7 +216,7 @@ input::placeholder{color:#555}
 .benefits li span{color:#00e87a;font-weight:700;flex-shrink:0}
 .proof-line{text-align:center;color:#666;font-size:12.5px;margin-top:18px}
 .success-box{text-align:center;padding:40px 20px;display:none}
-.success-box h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin:16px 0 8px}
+.success-box h2{font-family:'Archivo',sans-serif;font-size:28px;font-weight:800;margin:16px 0 8px}
 .success-box p{color:#888;margin-bottom:24px}
 .success-box a{display:inline-block;background:#00e87a;color:#000;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700}
 </style>
@@ -229,14 +229,14 @@ input::placeholder{color:#555}
 <div class="main">
   <div class="box">
     <div id="form-section">
-      <div class="badge">✨ Free forever — no credit card</div>
+      <div class="badge">Free forever — no credit card</div>
       <h1>Turn your website visitors into paying clients</h1>
       <p class="sub">Your own lead capture page, live in 60 seconds. Every lead goes straight to you.</p>
       <div class="price-hook">Most lead services charge <s>$30–100 per lead</s>.<br><b>Leads from your Leadly page are free. Forever.</b></div>
       <div class="trust-bar">
-        <div class="trust-pill"><span>🔒</span> SSL encrypted</div>
+        <div class="trust-pill">SSL encrypted</div>
         <div class="trust-pill"><span>✓</span> Cancel anytime</div>
-        <div class="trust-pill"><span>⚡</span> Instant setup</div>
+        <div class="trust-pill">Instant setup</div>
       </div>
 
       <div class="tabs">
@@ -273,7 +273,7 @@ input::placeholder{color:#555}
     </div>
 
     <div class="success-box" id="success-box">
-      <div style="font-size:56px">🎉</div>
+      <div class="success-mark">Done</div>
       <h2>You're in!</h2>
       <p>One quick step to set up your page…</p>
       <a href="/onboarding-page">Continue →</a>
@@ -402,31 +402,31 @@ function generateOnboardingPage() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Set up your page — Leadly</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
+body{font-family:'Inter',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh;display:flex;flex-direction:column}
 nav{padding:20px 40px;border-bottom:1px solid rgba(255,255,255,0.08)}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
 .logo span{color:#00e87a}
 .main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
 .box{width:100%;max-width:440px}
 .badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:6px 14px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
-h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;line-height:1.2}
+h1{font-family:'Archivo',sans-serif;font-size:32px;font-weight:800;margin-bottom:8px;line-height:1.2}
 .sub{color:#888;font-size:15px;margin-bottom:32px}
 .field{margin-bottom:14px}
 label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'DM Sans',sans-serif}
+input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:13px 16px;border-radius:8px;font-size:15px;outline:none;font-family:'Inter',sans-serif}
 input:focus{border-color:rgba(0,232,122,0.5)}
 input::placeholder{color:#555}
-.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'DM Sans',sans-serif}
+.btn{width:100%;background:#00e87a;color:#000;border:none;padding:15px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px;font-family:'Inter',sans-serif}
 .btn:disabled{opacity:0.6;cursor:not-allowed}
 .error{color:#ff5555;font-size:13px;margin-bottom:12px;padding:10px 14px;background:rgba(255,85,85,0.1);border-radius:6px;display:none}
 .hint{color:#555;font-size:13px;margin-top:14px;text-align:center}
 .success{display:none}
 .success h1{margin-bottom:12px}
 .link-box{background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.3);border-radius:10px;padding:18px 20px;margin:20px 0;word-break:break-all;font-size:16px;color:#00e87a;font-weight:600;text-align:center}
-.btn-secondary{width:100%;background:transparent;color:#f5f5f0;border:1px solid rgba(255,255,255,0.15);padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:10px;font-family:'DM Sans',sans-serif}
+.btn-secondary{width:100%;background:transparent;color:#f5f5f0;border:1px solid rgba(255,255,255,0.15);padding:14px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:10px;font-family:'Inter',sans-serif}
 .btn-secondary:hover{background:rgba(255,255,255,0.05)}
 .steps{margin:24px 0;padding:20px;background:rgba(255,255,255,0.03);border-radius:10px}
 .step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;font-size:14px;color:#c9c9c4;line-height:1.5}
@@ -440,7 +440,7 @@ input::placeholder{color:#555}
 <nav><a href="https://useleadly.io" class="logo">Lead<span>ly</span></a></nav>
 <div class="main">
   <div class="box">
-    <div class="badge">⚡ Last step</div>
+    <div class="badge">Last step</div>
     <h1>Set up your lead page</h1>
     <p class="sub">This creates your public link — the page you'll share to capture leads.</p>
     <div id="error" class="error"></div>
@@ -451,11 +451,11 @@ input::placeholder{color:#555}
     </div>
 
     <div class="box success" id="success-box">
-      <div class="badge">🎉 You're live</div>
+      <div class="badge">You're live</div>
       <h1>Your lead page is ready</h1>
       <p class="sub">Copy your link below and share it — every visitor who fills out the form becomes a lead in your dashboard.</p>
       <div class="link-box" id="live-link">useleadly.io/page/your-business</div>
-      <button class="btn" onclick="copyLink()">📋 Copy my link</button>
+      <button class="btn" onclick="copyLink()">Copy my link</button>
       <div class="steps">
         <div class="step"><div class="step-num">1</div><div>Paste your link in your Instagram/TikTok bio, or text it to prospects</div></div>
         <div class="step"><div class="step-num">2</div><div>New leads show up instantly on your dashboard</div></div>
@@ -545,18 +545,18 @@ function generateDashboardPage() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Leadly Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
+body{font-family:'Inter',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
 nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
 .logo span{color:#00e87a}
 .nav-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'DM Sans',sans-serif;transition:background .15s}
+.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'Inter',sans-serif;transition:background .15s}
 .nav-btn:hover{background:rgba(255,255,255,0.1)}
-.upgrade-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif}
-.logout{color:#666;cursor:pointer;font-size:13px;background:none;border:none;font-family:'DM Sans',sans-serif}
+.upgrade-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif}
+.logout{color:#666;cursor:pointer;font-size:13px;background:none;border:none;font-family:'Inter',sans-serif}
 .logout:hover{color:#fff}
 .container{max-width:1200px;margin:0 auto;padding:40px 24px}
 .leads-columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
@@ -578,37 +578,37 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 @media(max-width:400px){
   .stats{grid-template-columns:1fr}
 }
-.welcome{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}
+.welcome{font-family:'Archivo',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px}
 .subtitle{color:#888;margin-bottom:32px}
 .plan-badge{display:inline-block;background:rgba(0,232,122,0.1);color:#00e87a;padding:4px 10px;border-radius:100px;font-size:12px;font-weight:600;margin-left:8px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
 .stat-card{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px}
-.stat-num{font-family:'DM Sans',sans-serif;font-size:40px;font-weight:700;color:#00e87a;min-height:48px;display:flex;align-items:center}
+.stat-num{font-family:'Inter',sans-serif;font-size:40px;font-weight:700;color:#00e87a;min-height:48px;display:flex;align-items:center}
 .stat-label{color:#888;font-size:14px;margin-top:4px}
 .section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;margin-bottom:24px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.section h3{font-family:'Syne',sans-serif;font-size:16px}
+.section h3{font-family:'Archivo',sans-serif;font-size:16px}
 .url-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .url-text{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#00e87a;font-size:14px;word-break:break-all;min-width:0}
-.btn-sm{background:#00e87a;color:#000;border:none;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px;font-family:'DM Sans',sans-serif}
+.btn-sm{background:#00e87a;color:#000;border:none;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px;font-family:'Inter',sans-serif}
 .btn-ghost{background:rgba(255,255,255,0.05);color:#fff;border:1px solid rgba(255,255,255,0.15);padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap;font-size:13px;text-decoration:none;display:inline-block}
 
 /* Search */
 .search-wrap{position:relative;margin-bottom:16px}
 .prospect-search-wrap{display:flex;gap:10px;margin-bottom:16px}
-.prospect-search-wrap input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.prospect-search-wrap input{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px;border-radius:8px;font-size:14px;outline:none;font-family:'Inter',sans-serif}
 .prospect-search-wrap input:focus{border-color:rgba(0,232,122,0.4)}
 .prospect-search-wrap input::placeholder{color:#555}
-.search-go{background:#00e87a;color:#000;border:none;padding:11px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.search-go{background:#00e87a;color:#000;border:none;padding:11px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;white-space:nowrap}
 .prospect-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
 .prospect-info .p-name{font-weight:600;font-size:15px;margin-bottom:4px}
 .prospect-info .p-addr{color:#888;font-size:13px;margin-bottom:2px}
 .prospect-info .p-phone{color:#666;font-size:13px}
-.add-lead-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'DM Sans',sans-serif;flex-shrink:0}
+.add-lead-btn{background:#00e87a;color:#000;border:none;padding:8px 14px;border-radius:7px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'Inter',sans-serif;flex-shrink:0}
 .add-lead-btn:disabled{background:#1a4a2e;color:#4a8a5e;cursor:not-allowed}
 .prospect-empty{text-align:center;padding:40px;color:#555;font-size:14px}
 .searching{text-align:center;padding:30px;color:#888;font-size:14px}
-.search-wrap input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px 11px 40px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+.search-wrap input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 16px 11px 40px;border-radius:8px;font-size:14px;outline:none;font-family:'Inter',sans-serif}
 .search-wrap input:focus{border-color:rgba(0,232,122,0.4)}
 .search-wrap input::placeholder{color:#555}
 .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#555;font-size:15px}
@@ -634,7 +634,7 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .empty{text-align:center;padding:60px;color:#555}
 .no-results{text-align:center;padding:40px;color:#555;font-size:14px;display:none}
 .lead-body{flex:1;min-width:0}
-.delete-lead-btn{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0;font-family:'DM Sans',sans-serif}
+.delete-lead-btn{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0;font-family:'Inter',sans-serif}
 .delete-lead-btn:hover{color:#ff5555;background:rgba(255,85,85,0.1)}
 
 /* Integrations */
@@ -645,9 +645,9 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .int-card-desc{color:#666;font-size:12px}
 .webhook-row{display:flex;gap:10px;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
 .webhook-label{font-size:14px;font-weight:600;white-space:nowrap}
-input[type=url]{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 13px;border-radius:7px;font-size:14px;outline:none;min-width:0;font-family:'DM Sans',sans-serif}
+input[type=url]{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:9px 13px;border-radius:7px;font-size:14px;outline:none;min-width:0;font-family:'Inter',sans-serif}
 input[type=url]:focus{border-color:rgba(0,232,122,0.4)}
-.save-int{background:#00e87a;color:#000;border:none;padding:9px 16px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.save-int{background:#00e87a;color:#000;border:none;padding:9px 16px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;white-space:nowrap;font-family:'Inter',sans-serif}
 
 .toast{position:fixed;bottom:24px;right:24px;background:#00e87a;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
@@ -762,10 +762,10 @@ function renderDashboard(d) {
           <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-            \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
-            \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
+            \${l.phone ? \`<div class="lead-meta"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+            \${l.website ? \`<div class="lead-meta"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
             \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
-            \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">✉︎ Find email</button>\` : ''}
+            \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">Find email</button>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
             <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
           </div>
@@ -784,7 +784,7 @@ function renderDashboard(d) {
   </div>
 </nav>
 <div class="container">
-  <div class="welcome">Welcome back, \${d.name} 👋</div>
+  <div class="welcome">Welcome back, \${d.name}</div>
   <div class="subtitle">\${d.businessName}<span class="plan-badge">\${(d.plan||'free').toUpperCase()}</span></div>
 
   <div class="stats" id="stats-row"></div>
@@ -953,7 +953,7 @@ async function findEmail(id) {
       toast(data.reason || 'No email found on their site');
     }
   } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = '✉︎ Find email'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Find email'; }
     toast('Lookup failed');
   }
 }
@@ -1081,10 +1081,10 @@ async function addProspect(i) {
         <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-          \${l.phone ? \`<div class="lead-meta">📞 <a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
-          \${l.website ? \`<div class="lead-meta">🔗 <a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
+          \${l.phone ? \`<div class="lead-meta"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+          \${l.website ? \`<div class="lead-meta"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
           \${l.address ? \`<div class="lead-meta"><a class="lead-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}">\${l.address}</a></div>\` : ''}
-          \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">✉︎ Find email</button>\` : ''}
+          \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">Find email</button>\` : ''}
           \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
           <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
@@ -1111,32 +1111,32 @@ function generateIntegrationsPage() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Integrations — Leadly</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
+body{font-family:'Inter',sans-serif;background:#080808;color:#f5f5f0;min-height:100vh}
 nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
+.logo{font-family:'Archivo',sans-serif;font-weight:800;font-size:22px;text-decoration:none;color:#f5f5f0}
 .logo span{color:#00e87a}
 .nav-right{display:flex;align-items:center;gap:10px}
-.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'DM Sans',sans-serif}
-.back-btn{color:#888;text-decoration:none;font-size:14px;font-family:'DM Sans',sans-serif}
+.nav-btn{background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.12);padding:8px 14px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px;text-decoration:none;display:inline-block;font-family:'Inter',sans-serif}
+.back-btn{color:#888;text-decoration:none;font-size:14px;font-family:'Inter',sans-serif}
 .back-btn:hover{color:#fff}
 .container{max-width:700px;margin:0 auto;padding:40px 24px}
-h1{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px}
+h1{font-family:'Archivo',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px}
 .subtitle{color:#888;font-size:15px;margin-bottom:40px}
 .int-section{background:#111;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;margin-bottom:20px}
 .int-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
 .int-icon{width:44px;height:44px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:8px;box-sizing:border-box}
 .int-icon img,.int-icon svg{width:100%;height:100%;object-fit:contain}
-.int-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
+.int-title{font-family:'Archivo',sans-serif;font-size:17px;font-weight:700}
 .int-desc{color:#888;font-size:13px;margin-top:2px}
 .field{margin-bottom:14px}
 label{display:block;font-size:13px;color:#888;margin-bottom:6px;font-weight:500}
-input[type=url],input[type=text]{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 14px;border-radius:8px;font-size:14px;outline:none;font-family:'DM Sans',sans-serif}
+input[type=url],input[type=text]{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:11px 14px;border-radius:8px;font-size:14px;outline:none;font-family:'Inter',sans-serif}
 input:focus{border-color:rgba(0,232,122,0.4)}
 input::placeholder{color:#555}
-.save-btn{background:#00e87a;color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;margin-top:4px}
+.save-btn{background:#00e87a;color:#000;border:none;padding:10px 20px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;margin-top:4px}
 .save-btn:hover{background:#00c96a}
 .how-to{background:rgba(255,255,255,0.03);border-radius:8px;padding:14px;margin-top:14px}
 .how-to p{font-size:13px;color:#666;line-height:1.6}
@@ -1301,15 +1301,31 @@ button:hover{background:#00c96a}
 .success p{color:#999}
 .footer{text-align:center;padding:24px;color:#444;font-size:13px}
 .footer a{color:#00e87a;text-decoration:none}
+
+
+/* ── type + form ──────────────────────────────────────────────────── */
+body{letter-spacing:-0.011em}
+.welcome{font-weight:600;letter-spacing:-0.035em}
+.stat-num{letter-spacing:-0.035em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.stat-label{font-size:13px;letter-spacing:0.005em;color:#8a8a8a}
+h1,h2,h3{letter-spacing:-0.028em}
+.plan-badge{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;font-weight:600}
+.meta-key{display:inline-block;min-width:30px;color:#6d6d6d;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;margin-right:8px}
+.lead-name,.p-name{letter-spacing:-0.018em;font-weight:600}
+.prospect-count{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;color:#7a7a7a}
+.success-mark{font-family:'Archivo',sans-serif;font-size:32px;font-weight:700;letter-spacing:-0.03em;color:#00e87a;margin-bottom:8px}
+
+/* Softer geometry — 16px pills read as generic; 10px reads considered */
+.stat-card,.lead-card,.prospect-card{border-radius:10px}
 </style>
 </head>
 <body>
 <div class="hero">
-  <div class="badge">⚡ Fast Response Guaranteed</div>
+  <div class="badge">Fast response guaranteed</div>
   <h1>${biz.businessName}<br><span>Get a Free Quote</span></h1>
   ${biz.description ? `<p class="subtitle">${biz.description}</p>` : ''}
   <div class="card">
-    <h2>📍 Request a Free Quote</h2>
+    <h2>Request a free quote</h2>
     <p>Fill out the form and we'll get back to you within 24 hours.</p>
     <div id="leadForm">
       <input type="text" id="name" placeholder="Your name" required>
@@ -1319,7 +1335,7 @@ button:hover{background:#00c96a}
       <button onclick="submitLead()">Get My Free Quote →</button>
     </div>
     <div class="success" id="success">
-      <div style="font-size:48px">✅</div>
+      <div class="success-mark">Sent</div>
       <h3>Request Sent!</h3>
       <p>We'll be in touch within 24 hours.</p>
     </div>
@@ -1548,7 +1564,7 @@ const server = createServer(async (req, res) => {
           body: JSON.stringify({
             from: "Leadly <onboarding@resend.dev>",
             to: NOTIFY_EMAIL,
-            subject: `🆕 New signup: ${name} (${email})`,
+            subject: `New signup: ${name} (${email})`,
             html: `<p><b>${name}</b> (${email}) just signed up for Leadly.<br>Business: ${businessName}<br>Plan: ${userPlan}</p>`
           })
         }).catch(console.error);
@@ -1972,6 +1988,6 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🎯 Leadly API running on port ${PORT}`);
+  console.log(`Leadly API running on port ${PORT}`);
   getDb().catch(console.error); // warm up connection
 });

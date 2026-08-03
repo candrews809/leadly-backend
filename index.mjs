@@ -651,6 +651,72 @@ input[type=url]:focus{border-color:rgba(0,232,122,0.4)}
 
 .toast{position:fixed;bottom:24px;right:24px;background:#00e87a;color:#000;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
+
+
+/* ── refinement layer ─────────────────────────────────────────────── */
+/* Surfaces: soft top-lit gradient instead of flat fill */
+.stat-card, .lead-card, .prospect-card{
+  background:linear-gradient(168deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.012) 42%, rgba(255,255,255,0) 100%), #101010;
+  transition:border-color .18s ease, transform .18s ease, background .18s ease;
+}
+.lead-card:hover, .prospect-card:hover{
+  border-color:rgba(255,255,255,0.16);
+  transform:translateY(-1px);
+}
+
+/* Hierarchy: the plan-limit card is the one that matters */
+#stats-row{align-items:stretch}
+#stats-row .stat-card{display:flex;flex-direction:column;justify-content:center}
+#stats-row .stat-card:nth-child(1) .stat-num,
+#stats-row .stat-card:nth-child(3) .stat-num{
+  color:#f5f5f0;
+  font-size:34px;
+  font-weight:600;
+}
+#stats-row .stat-card:nth-child(2){
+  border-color:rgba(0,232,122,0.22);
+  background:linear-gradient(168deg, rgba(0,232,122,0.07) 0%, rgba(0,232,122,0.015) 45%, rgba(255,255,255,0) 100%), #101010;
+}
+#stats-row .stat-card:nth-child(2) .stat-num{
+  font-size:46px;
+  letter-spacing:-0.02em;
+}
+.stat-label{letter-spacing:.01em}
+
+/* Type: tighten the display face so it reads as a heading, not a label */
+.welcome{letter-spacing:-0.02em}
+
+/* Buttons feel pressable */
+.add-lead-btn, .search-btn, .upgrade-btn, .load-more, .find-email-btn{
+  transition:transform .12s ease, background .18s ease, box-shadow .18s ease;
+}
+.add-lead-btn:hover:not(:disabled), .upgrade-btn:hover{
+  box-shadow:0 4px 14px rgba(0,232,122,0.22);
+}
+.add-lead-btn:active:not(:disabled), .load-more:active, .find-email-btn:active{transform:translateY(1px)}
+
+/* Usage bar: give it a soft glow so the number and the bar read as one unit */
+.usage-fill{box-shadow:0 0 12px rgba(0,232,122,0.35)}
+
+/* Focus visible for keyboard users */
+button:focus-visible, input:focus-visible, a:focus-visible{
+  outline:2px solid rgba(0,232,122,0.6);
+  outline-offset:2px;
+}
+
+.prospect-empty{line-height:1.55}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important; animation:none !important}
+  .lead-card:hover, .prospect-card:hover{transform:none}
+}
+
+/* Re-assert mobile sizing after the refinements above */
+@media (max-width:768px){
+  #stats-row .stat-card:nth-child(1) .stat-num,
+  #stats-row .stat-card:nth-child(3) .stat-num{font-size:24px}
+  #stats-row .stat-card:nth-child(2) .stat-num{font-size:32px}
+}
 </style>
 </head>
 <body>
@@ -688,7 +754,7 @@ async function init() {
 
 function renderDashboard(d) {
   const leadsHtml = allLeads.length === 0
-    ? \`<div class="empty"><p>No leads yet.</p><p style="color:#555;font-size:14px;margin-top:8px">Share your page link to start capturing leads.</p></div>\`
+    ? \`<div class="empty"><p>No leads yet.</p><p style="color:#777;font-size:14px;margin-top:8px;line-height:1.55">Search for businesses on the right to add your first one,<br>or share your page link to capture them automatically.</p></div>\`
     : allLeads.map((l, i) => {
         const initial = (l.name || '?')[0].toUpperCase();
         return \`<div class="lead-card" data-idx="\${i}">

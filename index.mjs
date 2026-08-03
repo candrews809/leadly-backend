@@ -757,13 +757,12 @@ h1,h2,h3{letter-spacing:-0.028em}
 .lead-name{font-size:15px;margin-bottom:7px}
 
 /* Key/value rows line up in a column so Tel and Web read as a table */
-.lead-meta{
+.lead-meta{font-size:13px;line-height:1.65}
+.lead-meta.kv{
   display:grid;
-  grid-template-columns:34px minmax(0,1fr);
+  grid-template-columns:38px minmax(0,1fr);
   align-items:baseline;
-  gap:12px;
-  font-size:13px;
-  line-height:1.65;
+  column-gap:14px;
 }
 .meta-key{
   min-width:0;margin:0;
@@ -771,19 +770,21 @@ h1,h2,h3{letter-spacing:-0.028em}
   text-transform:uppercase;font-weight:500;
 }
 /* long tracking URLs get truncated instead of wrapping over three lines */
-.lead-meta a.lead-link{
+.lead-meta.kv a.lead-link{
   display:block;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   border-bottom:none;
 }
-.lead-meta a.lead-link:hover{text-decoration:underline;text-underline-offset:3px}
+.lead-meta.kv a.lead-link:hover{text-decoration:underline;text-underline-offset:3px}
 .lead-email{font-size:13px;color:#f5f5f0;margin-bottom:2px}
 
 /* date sits quietly at the right, not stacked under the buttons */
-.lead-body > .lead-meta:last-of-type{
-  display:block;
-  position:absolute;top:16px;right:36px;
-  font-size:11px;color:#5f5f5f;letter-spacing:0.02em;
+.lead-date{
+  position:absolute;top:17px;right:34px;
+  font-size:11px;color:#5f5f5f;letter-spacing:0.02em;white-space:nowrap;
+}
+.lead-note{
+  margin-top:9px;font-size:12px;color:#6a6a6a;line-height:1.5;
 }
 .find-email-btn{margin-top:10px}
 .delete-lead-btn{opacity:0;transition:opacity .15s ease}
@@ -801,7 +802,8 @@ h1,h2,h3{letter-spacing:-0.028em}
 .p-addr,.p-phone{font-size:12.5px;line-height:1.6;color:#8a8a8a}
 
 @media (max-width:768px){
-  .lead-body > .lead-meta:last-of-type{position:static;margin-top:8px}
+  .lead-date{position:static;margin-top:8px}
+  .lead-meta.kv{grid-template-columns:34px minmax(0,1fr);column-gap:10px}
   .delete-lead-btn{opacity:1}
 }
 
@@ -891,12 +893,12 @@ function renderDashboard(d) {
           <div class="lead-body">
             <div class="lead-name">\${l.name || 'Unknown'}</div>
             \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-            \${l.phone ? \`<div class="lead-meta"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
-            \${l.website ? \`<div class="lead-meta"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
-            \${l.message ? \`<div class="lead-meta" style="margin-top:4px">\${l.message}</div>\` : ''}
+            \${l.phone ? \`<div class="lead-meta kv"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+            \${l.website ? \`<div class="lead-meta kv"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
+            \${l.message ? \`<div class="lead-note">\${l.message}</div>\` : ''}
             \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">Find email</button>\` : ''}
-          \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
-            <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          \${!l.phone && !l.website && !l.email ? '<div class="lead-note">No contact info on file</div>' : ''}
+            <div class="lead-date">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
           </div>
           <button class="delete-lead-btn" onclick="deleteLead('\${l._id}', this)" title="Delete lead">✕</button>
         </div>\`;
@@ -1210,12 +1212,12 @@ async function addProspect(i) {
         <div class="lead-body">
           <div class="lead-name">\${l.name || 'Unknown'}</div>
           \${l.email ? \`<div class="lead-email">\${l.email}</div>\` : ''}
-          \${l.phone ? \`<div class="lead-meta"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
-          \${l.website ? \`<div class="lead-meta"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
-          \${l.address ? \`<div class="lead-meta"><a class="lead-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}">\${l.address}</a></div>\` : ''}
+          \${l.phone ? \`<div class="lead-meta kv"><span class="meta-key">Tel</span><a class="lead-link" href="tel:\${String(l.phone).replace(/[^0-9+]/g,'')}">\${l.phone}</a></div>\` : ''}
+          \${l.website ? \`<div class="lead-meta kv"><span class="meta-key">Web</span><a class="lead-link" target="_blank" rel="noopener" href="\${String(l.website).indexOf('http')===0?l.website:'https://'+l.website}">\${l.website}</a></div>\` : ''}
+          \${l.address ? \`<div class="lead-meta kv"><span class="meta-key">Map</span><a class="lead-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=\${encodeURIComponent(l.address)}">\${l.address}</a></div>\` : ''}
           \${!l.email && l.website ? \`<button class="find-email-btn" id="fe-\${l._id}" onclick="findEmail('\${l._id}')">Find email</button>\` : ''}
-          \${!l.phone && !l.website && !l.email ? '<div class="lead-meta" style="color:#666">No contact info available</div>' : ''}
-          <div class="lead-meta" style="margin-top:4px">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+          \${!l.phone && !l.website && !l.email ? '<div class="lead-note">No contact info on file</div>' : ''}
+          <div class="lead-date">\${new Date(l.timestamp || Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
         <button class="delete-lead-btn" onclick="deleteLead('\${l._id}', this)" title="Delete lead">✕</button>
       </div>\`;

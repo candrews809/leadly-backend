@@ -617,6 +617,10 @@ nav{padding:16px 40px;border-bottom:1px solid rgba(255,255,255,0.08);display:fle
 .lead-card{background:#1a1a1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;gap:16px;align-items:flex-start}
 .lead-link{color:#00e87a;text-decoration:none;border-bottom:1px solid rgba(0,232,122,0.3)}
 .usage-bar{margin-top:10px;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.load-more{width:100%;margin-top:10px;padding:12px;background:rgba(0,232,122,0.1);color:#00e87a;border:1px solid rgba(0,232,122,0.35);border-radius:10px;font-weight:600;cursor:pointer;font-size:14px}
+.load-more:hover{background:rgba(0,232,122,0.18)}
+.load-more:disabled{opacity:.6;cursor:default}
+.prospect-count{font-size:12px;color:#888;margin-bottom:8px}
 .usage-fill{height:100%;border-radius:99px;transition:width .3s ease}
 .lead-link:hover{border-bottom-color:#00e87a}
 .lead-avatar{width:40px;height:40px;border-radius:50%;background:rgba(0,232,122,0.15);display:flex;align-items:center;justify-content:center;font-weight:700;color:#00e87a;font-size:16px;flex-shrink:0}
@@ -834,33 +838,68 @@ async function deleteLead(id, btn) {
 async function findLeads() {
   const q = document.getElementById('prospect-query').value.trim();
   if (!q) return;
+  window._prospects = [];
+  window._nextPageToken = null;
+  window._lastQuery = q;
   const box = document.getElementById('prospect-results');
   box.innerHTML = '<div class="searching">Searching...</div>';
+  await fetchProspectPage(true);
+}
+
+async function loadMoreProspects() {
+  const btn = document.getElementById('load-more-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
+  await fetchProspectPage(false);
+}
+
+async function fetchProspectPage(isFirst) {
+  const box = document.getElementById('prospect-results');
   try {
-    const res = await fetch(API + '/search-places?q=' + encodeURIComponent(q), {
-      headers: { Authorization: 'Bearer ' + token }
-    });
+    const url = window._nextPageToken
+      ? API + '/search-places?pagetoken=' + encodeURIComponent(window._nextPageToken)
+      : API + '/search-places?q=' + encodeURIComponent(window._lastQuery);
+    const res  = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
     const data = await res.json();
-    if (!data.results || data.results.length === 0) {
+
+    if (data.placesError) {
+      if (isFirst) box.innerHTML = '<div class="prospect-empty">Search unavailable right now. Try again in a moment.</div>';
+      return;
+    }
+    const batch = data.results || [];
+    if (isFirst && batch.length === 0) {
       box.innerHTML = '<div class="prospect-empty">No results found. Try a different search.</div>';
       return;
     }
-    box.innerHTML = data.results.map((p, i) => {
-      const added = allLeads.some(l => l.name === p.name && l.address === p.address);
-      return \`<div class="prospect-card">
-        <div class="prospect-info">
-          <div class="p-name">\${p.name}</div>
-          <div class="p-addr">\${p.address || ''}</div>
-          \${p.phone ? \`<div class="p-phone">\${p.phone}</div>\` : ''}
-          \${p.rating ? \`<div class="p-phone">Rating: \${p.rating}/5</div>\` : ''}
-        </div>
-        <button class="add-lead-btn" id="add-\${i}" onclick="addProspect(\${i})" \${added ? 'disabled' : ''}>\${added ? 'Added' : 'Add lead'}</button>
-      </div>\`;
-    }).join('');
-    window._prospects = data.results;
-  } catch(e) {
-    box.innerHTML = '<div class="prospect-empty">Search failed. Please try again.</div>';
+    window._prospects = (window._prospects || []).concat(batch);
+    window._nextPageToken = data.nextPageToken || null;
+    renderProspects();
+  } catch (e) {
+    if (isFirst) box.innerHTML = '<div class="prospect-empty">Search failed. Try again.</div>';
+    const btn = document.getElementById('load-more-btn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Load more'; }
   }
+}
+
+function renderProspects() {
+  const box = document.getElementById('prospect-results');
+  const cards = window._prospects.map((p, i) => {
+    const added = allLeads.some(l => l.name === p.name && l.address === p.address);
+    return \`<div class="prospect-card">
+      <div class="prospect-info">
+        <div class="p-name">\${p.name}</div>
+        <div class="p-addr">\${p.address || ''}</div>
+        \${p.phone ? \`<div class="p-phone">\${p.phone}</div>\` : ''}
+        \${p.rating ? \`<div class="p-phone">Rating: \${p.rating}/5</div>\` : ''}
+      </div>
+      <button class="add-lead-btn" id="add-\${i}" onclick="addProspect(\${i})" \${added ? 'disabled' : ''}>\${added ? 'Added' : 'Add lead'}</button>
+    </div>\`;
+  }).join('');
+
+  const more = window._nextPageToken
+    ? \`<button id="load-more-btn" class="load-more" onclick="loadMoreProspects()">Load more</button>\`
+    : (window._prospects.length > 20 ? \`<div class="prospect-empty" style="padding:12px">That's all \${window._prospects.length} results.</div>\` : '');
+
+  box.innerHTML = \`<div class="prospect-count">\${window._prospects.length} result\${window._prospects.length === 1 ? '' : 's'}</div>\` + cards + more;
 }
 
 async function addProspect(i) {
@@ -1517,54 +1556,33 @@ const server = createServer(async (req, res) => {
     if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
     const params = new URLSearchParams(req.url.split("?")[1] || "");
     const query  = params.get("q");
-    if (!query) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No query" })); return; }
+    if (!query && !params.get("pagetoken")) { res.writeHead(400, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "No query" })); return; }
     try {
       const apiKey = process.env.GOOGLE_PLACES_API_KEY;
       const base   = "https://maps.googleapis.com/maps/api/place/textsearch/json";
-      const sleep  = ms => new Promise(r => setTimeout(r, ms));
+      const inToken = params.get("pagetoken");
 
-      // Google returns 20 per page and allows up to 3 pages (60 results).
-      // next_page_token needs a moment before it becomes valid.
-      let all = [];
-      let pageToken = null;
-      for (let page = 0; page < 3; page++) {
-        let data = null;
-        // A fresh next_page_token is not valid instantly. Google answers
-        // INVALID_REQUEST until it is ready, so retry with a longer wait.
-        for (let attempt = 0; attempt < 4; attempt++) {
-          const gUrl = pageToken
-            ? base + "?pagetoken=" + encodeURIComponent(pageToken) + "&key=" + apiKey
-            : base + "?query=" + encodeURIComponent(query) + "&key=" + apiKey;
-          const r = await fetch(gUrl);
-          data = await r.json();
-          if (data.status === "INVALID_REQUEST" && pageToken) {
-            console.log("Places: token not ready, retry " + (attempt + 1));
-            await sleep(1500 * (attempt + 1));
-            continue;
-          }
-          break;
-        }
-        console.log("Places page " + (page + 1) + ": status=" + data.status +
-                    " got=" + (data.results || []).length +
-                    " nextToken=" + (data.next_page_token ? "yes" : "no"));
-        if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
-          console.error("Places error:", data.status, data.error_message || "");
-          break;
-        }
-        all = all.concat(data.results || []);
-        pageToken = data.next_page_token || null;
-        if (!pageToken) break;
-        await sleep(2500);
+      // ONE request per call. Page 2/3 are fetched on demand by "Load more",
+      // so the first search stays fast.
+      const gUrl = inToken
+        ? base + "?pagetoken=" + encodeURIComponent(inToken) + "&key=" + apiKey
+        : base + "?query=" + encodeURIComponent(query) + "&key=" + apiKey;
+
+      const r    = await fetch(gUrl);
+      const data = await r.json();
+      console.log("Places: status=" + data.status +
+                  " got=" + (data.results || []).length +
+                  " nextToken=" + (data.next_page_token ? "yes" : "no") +
+                  " q=" + (inToken ? "(page token)" : query));
+
+      if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+        console.error("Places error:", data.status, data.error_message || "");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ results: [], nextPageToken: null, placesError: data.status }));
+        return;
       }
-      console.log("Places total collected: " + all.length + " for query: " + query);
 
-      // de-dupe by place_id in case pages overlap
-      const seen = new Set();
-      const results = all.filter(p => {
-        if (!p.place_id || seen.has(p.place_id)) return false;
-        seen.add(p.place_id);
-        return true;
-      }).map(p => ({
+      const results = (data.results || []).map(p => ({
         name:    p.name,
         address: p.formatted_address,
         phone:   p.formatted_phone_number || "",
@@ -1572,7 +1590,7 @@ const server = createServer(async (req, res) => {
         rating:  p.rating,
       }));
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ results }));
+      res.end(JSON.stringify({ results, nextPageToken: data.next_page_token || null }));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: err.message }));

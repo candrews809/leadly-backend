@@ -717,6 +717,135 @@ button:focus-visible, input:focus-visible, a:focus-visible{
   #stats-row .stat-card:nth-child(3) .stat-num{font-size:24px}
   #stats-row .stat-card:nth-child(2) .stat-num{font-size:32px}
 }
+
+
+/* ── type + form ──────────────────────────────────────────────────── */
+body{letter-spacing:-0.011em}
+.welcome{font-weight:600;letter-spacing:-0.035em}
+.stat-num{letter-spacing:-0.035em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.stat-label{font-size:13px;letter-spacing:0.005em;color:#8a8a8a}
+h1,h2,h3{letter-spacing:-0.028em}
+.plan-badge{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;font-weight:600}
+.meta-key{display:inline-block;min-width:30px;color:#6d6d6d;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;margin-right:8px}
+.lead-name,.p-name{letter-spacing:-0.018em;font-weight:600}
+.prospect-count{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;color:#7a7a7a}
+.success-mark{font-family:'Archivo',sans-serif;font-size:32px;font-weight:700;letter-spacing:-0.03em;color:#00e87a;margin-bottom:8px}
+
+/* Softer geometry — 16px pills read as generic; 10px reads considered */
+.stat-card,.lead-card,.prospect-card{border-radius:10px}
+
+
+/* ── lead ledger ──────────────────────────────────────────────────── */
+/* Rows, not a stack of cards: this is a contact list, so read it like one. */
+.lead-card{
+  background:transparent;
+  border:none;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  border-radius:0;
+  padding:16px 4px;
+  margin-bottom:0;
+  gap:14px;
+  position:relative;
+}
+.lead-card:hover{background:rgba(255,255,255,0.022);transform:none;border-color:rgba(255,255,255,0.12)}
+.lead-card:last-child{border-bottom:none}
+.lead-avatar{
+  width:30px;height:30px;min-width:30px;border-radius:7px;
+  font-size:12px;font-weight:600;letter-spacing:0;
+  background:rgba(255,255,255,0.05);color:#9a9a9a;border:1px solid rgba(255,255,255,0.07);
+}
+.lead-name{font-size:15px;margin-bottom:7px}
+
+/* Key/value rows line up in a column so Tel and Web read as a table */
+.lead-meta{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  align-items:baseline;
+  gap:12px;
+  font-size:13px;
+  line-height:1.65;
+}
+.meta-key{
+  min-width:0;margin:0;
+  color:#6d6d6d;font-size:10px;letter-spacing:0.09em;
+  text-transform:uppercase;font-weight:500;
+}
+/* long tracking URLs get truncated instead of wrapping over three lines */
+.lead-meta a.lead-link{
+  display:block;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border-bottom:none;
+}
+.lead-meta a.lead-link:hover{text-decoration:underline;text-underline-offset:3px}
+.lead-email{font-size:13px;color:#f5f5f0;margin-bottom:2px}
+
+/* date sits quietly at the right, not stacked under the buttons */
+.lead-body > .lead-meta:last-of-type{
+  display:block;
+  position:absolute;top:16px;right:36px;
+  font-size:11px;color:#5f5f5f;letter-spacing:0.02em;
+}
+.find-email-btn{margin-top:10px}
+.delete-lead-btn{opacity:0;transition:opacity .15s ease}
+.lead-card:hover .delete-lead-btn,
+.delete-lead-btn:focus-visible{opacity:1}
+
+/* Prospect results: same ledger logic, lighter */
+.prospect-card{
+  background:transparent;border:none;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  border-radius:0;padding:14px 4px;margin-bottom:0;
+}
+.prospect-card:hover{background:rgba(255,255,255,0.022);transform:none;border-color:rgba(255,255,255,0.12)}
+.prospect-card:last-of-type{border-bottom:none}
+.p-addr,.p-phone{font-size:12.5px;line-height:1.6;color:#8a8a8a}
+
+@media (max-width:768px){
+  .lead-body > .lead-meta:last-of-type{position:static;margin-top:8px}
+  .delete-lead-btn{opacity:1}
+}
+
+
+/* ── usage meter ──────────────────────────────────────────────────── */
+/* One figure that matters, two that give it context. Not three equal tiles. */
+#stats-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);
+  gap:0;
+  background:linear-gradient(168deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.008) 50%, transparent 100%), #0d0d0d;
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:28px;
+}
+#stats-row .stat-card{
+  background:none;border:none;border-radius:0;
+  border-left:1px solid rgba(255,255,255,0.06);
+  padding:22px 26px;
+}
+#stats-row .stat-card:first-child{border-left:none}
+
+/* primary: the plan-limit figure leads */
+#stats-row .stat-card:nth-child(2){order:-1;border-left:none}
+#stats-row .stat-card:nth-child(2) .stat-num{font-size:52px;line-height:1}
+#stats-row .stat-card:nth-child(1),
+#stats-row .stat-card:nth-child(3){justify-content:center}
+#stats-row .stat-card:nth-child(1) .stat-num,
+#stats-row .stat-card:nth-child(3) .stat-num{
+  font-size:26px;font-weight:500;color:#c9c9c4;min-height:0;
+}
+#stats-row .stat-label{
+  font-size:10px;letter-spacing:0.11em;text-transform:uppercase;
+  color:#6d6d6d;margin-top:8px;font-weight:500;
+}
+#stats-row .usage-bar{margin-top:14px;height:4px;border-radius:2px}
+#stats-row .usage-fill{border-radius:2px}
+
+@media (max-width:768px){
+  #stats-row{grid-template-columns:1fr 1fr}
+  #stats-row .stat-card:nth-child(2){grid-column:1 / -1;border-bottom:1px solid rgba(255,255,255,0.06)}
+  #stats-row .stat-card:nth-child(1){border-left:none}
+}
 </style>
 </head>
 <body>
@@ -1301,22 +1430,6 @@ button:hover{background:#00c96a}
 .success p{color:#999}
 .footer{text-align:center;padding:24px;color:#444;font-size:13px}
 .footer a{color:#00e87a;text-decoration:none}
-
-
-/* ── type + form ──────────────────────────────────────────────────── */
-body{letter-spacing:-0.011em}
-.welcome{font-weight:600;letter-spacing:-0.035em}
-.stat-num{letter-spacing:-0.035em;font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-.stat-label{font-size:13px;letter-spacing:0.005em;color:#8a8a8a}
-h1,h2,h3{letter-spacing:-0.028em}
-.plan-badge{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;font-weight:600}
-.meta-key{display:inline-block;min-width:30px;color:#6d6d6d;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;margin-right:8px}
-.lead-name,.p-name{letter-spacing:-0.018em;font-weight:600}
-.prospect-count{letter-spacing:0.06em;text-transform:uppercase;font-size:10px;color:#7a7a7a}
-.success-mark{font-family:'Archivo',sans-serif;font-size:32px;font-weight:700;letter-spacing:-0.03em;color:#00e87a;margin-bottom:8px}
-
-/* Softer geometry — 16px pills read as generic; 10px reads considered */
-.stat-card,.lead-card,.prospect-card{border-radius:10px}
 </style>
 </head>
 <body>

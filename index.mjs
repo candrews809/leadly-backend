@@ -462,3 +462,228 @@ document.addEventListener('keydown', e => {
 </body>
 </html>\`;
 }
+// ─── EXPRESS APP ───────────────────────────────────────────────────────────
+import express from "express";
+
+const app = express();
+
+// IMPORTANT: Raw body middleware for Stripe webhooks (must be BEFORE express.json())
+app.use("/api/stripe-webhook", express.raw({ type: "application/json" }));
+
+app.use(express.json());
+
+// ─── ROUTES ────────────────────────────────────────────────────────────────
+
+// signup
+app.post("/signup", async (req, res) => {
+  const { email, password, plan } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: "Email and password required" });
+  const db = await getDb();
+  const existing = await db.collection("users").findOne({ email });
+  if (existing)
+    return res.status(400).json({ error: "Email already in use" });
+  const hashed = hashPassword(password);
+  const token = generateToken();
+  const slug = generateSlug(email);
+  const result = await db.collection("users").insertOne({
+    email,
+    password: hashed,
+    token,
+    name: email.split("@")[0],
+    slug,
+    plan: plan || "free",
+    createdAt: new Date(),
+    leads: [],
+  });
+  await sendWelcomeEmail({ email, name: email.split("@")[0], slug });
+  res.json({ token, slug, email });
+});
+
+// login
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: "Email and password required" });
+  const db = await getDb();
+  const user = await db.collection("users").findOne({ email });
+  if (!user || user.password !== hashPassword(password))
+    return res.status(401).json({ error: "Invalid email or password" });
+  res.json({ token: user.token, slug: user.slug, email: user.email });
+});
+
+// checkout (create Stripe session)
+app.post("/checkout", async (req, res) => {
+  const user = await getUserFromToken(req.headers.authorization?.split(" ")[1]);
+  if (!user) return res.status(401).json({ error: "Not authenticated" });
+  const { plan } = req.body;
+  const session = await createCheckoutSession(plan, user.email);
+  res.json(session);
+});
+
+// ─── CONVERSION TRACKING ENDPOINTS ──────────────────────────────────────────
+
+// POST /api/conversion-pixel
+app.post("/api/conversion-pixel", async (req, res) => {
+  try {
+    const { event, email, timestamp, ...data } = req.body;
+    const db = await getDb();
+
+    await db.collection("conversions").insertOne({
+      event: event || "unknown",
+      email: email || "unknown",
+      timestamp: timestamp || new Date().toISOString(),
+      data: req.body,
+      createdAt: new Date(),
+    });
+
+    if (event === "page_view") console.log(`👁️  Page view: ${email}`);
+    if (event === "signup") console.log(`✅ Signup: ${email}`);
+    if (event === "paid_conversion")
+      console.log(`💰 Paid conversion: ${email} - $${data.amount}`);
+
+    res.json({ status: "ok", logged: true });
+  } catch (err) {
+    console.error("Conversion pixel error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/stripe-webhook
+app.post("/api/stripe-webhook", async (req, res) => {
+  try {
+    const sig = req.headers["stripe-signature"];
+    let event;
+
+    try {
+      const stripe = await import("stripe");
+      event = stripe.default(STRIPE_SECRET_KEY).webhooks.constructEvent(
+        req.body,
+        sig,
+        STRIPE_WEBHOOK_SECRET
+      );
+    } catch (err) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    const { type, data } = event;
+    const eventData = data.object;
+    const db = await getDb();
+
+    console.log(`📩 Stripe webhook: ${type}`);
+
+    if (type === "charge.succeeded") {
+      const email = eventData.receipt_email || "unknown";
+      const amount = eventData.amount / 100;
+      console.log(`💰 Charge succeeded: ${email} - $${amount}`);
+
+      await db.collection("conversions").insertOne({
+        event: "paid_conversion",
+        email,
+        amount,
+        stripe_id: eventData.id,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date(),
+      });
+
+      await db.collection("users").updateOne(
+        { email },
+        {
+          $set: {
+            paid: true,
+            stripeCustomerId: eventData.customer,
+          },
+        }
+      );
+    }
+
+    if (type === "customer.subscription.created") {
+      console.log(`📅 Subscription created: ${eventData.id}`);
+      await db.collection("conversions").insertOne({
+        event: "subscription_created",
+        stripe_id: eventData.id,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date(),
+      });
+    }
+
+    if (type === "invoice.paid") {
+      const email = eventData.customer_email || "unknown";
+      const amount = eventData.amount_paid / 100;
+      console.log(`📄 Invoice paid: ${email} - $${amount}`);
+
+      await db.collection("conversions").insertOne({
+        event: "invoice_paid",
+        email,
+        amount,
+        stripe_id: eventData.id,
+        timestamp: new Date().toISOString(),
+        createdAt: new Date(),
+      });
+    }
+
+    await db.collection("webhook_events").insertOne({
+      type,
+      event_id: event.id,
+      data: eventData,
+      timestamp: new Date().toISOString(),
+    });
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error("Webhook error:", err.message);
+    res.status(400).send(`Webhook error: ${err.message}`);
+  }
+});
+
+// GET /api/conversions/metrics
+app.get("/api/conversions/metrics", async (req, res) => {
+  try {
+    const db = await getDb();
+
+    const pageViews = await db
+      .collection("conversions")
+      .countDocuments({ event: "page_view" });
+    const signups = await db
+      .collection("conversions")
+      .countDocuments({ event: "signup" });
+    const paidConversions = await db
+      .collection("conversions")
+      .countDocuments({ event: "paid_conversion" });
+
+    const revenueResult = await db
+      .collection("conversions")
+      .aggregate([
+        {
+          $match: {
+            event: "paid_conversion",
+            amount: { $exists: true },
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ])
+      .toArray();
+
+    const revenue = revenueResult[0]?.total || 0;
+    const conversionRate =
+      pageViews > 0 ? ((signups / pageViews) * 100).toFixed(2) : 0;
+
+    res.json({
+      pageViews,
+      signups,
+      paidConversions,
+      revenue: revenue.toFixed(2),
+      conversionRate: parseFloat(conversionRate),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SERVER ────────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

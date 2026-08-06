@@ -2025,6 +2025,7 @@ const server = createServer(async (req, res) => {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true, token: user.token, slug: user.slug, name: user.name }));
       } catch (err) {
+        console.error("Login error:", err.message);
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Server error" }));
       }

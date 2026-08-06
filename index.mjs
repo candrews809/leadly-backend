@@ -1656,6 +1656,90 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  // ── GET /api/conversions/metrics ────────────────────────────────────────
+  // Reads back what /api/conversion-pixel has collected. Requires login so
+  // this data isn't world-readable.
+  if (req.method === "GET" && url === "/api/conversions/metrics") {
+    const tok  = req.headers.authorization?.replace("Bearer ", "");
+    const user = await getUserFromToken(tok);
+    if (!user) { res.writeHead(401, { "Content-Type": "application/json" }); res.end(JSON.stringify({ error: "Unauthorized" })); return; }
+    try {
+      const database = await getDb();
+      const events   = database.collection("events");
+
+      const daysParam = parseInt(params.get("days"), 10);
+      const days  = Number.isFinite(daysParam) && daysParam > 0 ? Math.min(daysParam, 90) : 30;
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const match = { receivedAt: { $gte: since } };
+
+      const [byEvent, byCampaign, bySource, paidAgg, recentSignups] = await Promise.all([
+        events.aggregate([
+          { $match: match },
+          { $group: { _id: "$event", count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ]).toArray(),
+        events.aggregate([
+          { $match: { ...match, campaignId: { $nin: [null, ""] } } },
+          { $group: { _id: { campaignId: "$campaignId", event: "$event" }, count: { $sum: 1 } } }
+        ]).toArray(),
+        events.aggregate([
+          { $match: { ...match, utmSource: { $nin: [null, ""] } } },
+          { $group: { _id: { utmSource: "$utmSource", event: "$event" }, count: { $sum: 1 } } }
+        ]).toArray(),
+        events.aggregate([
+          { $match: { ...match, event: "paid_conversion" } },
+          { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } }
+        ]).toArray(),
+        events.find({ ...match, event: "signup" })
+          .sort({ receivedAt: -1 }).limit(20)
+          .project({ email: 1, plan: 1, utmSource: 1, utmCampaign: 1, receivedAt: 1 })
+          .toArray()
+      ]);
+
+      // reshape campaign/source rows from {campaignId,event}->count into a per-campaign funnel
+      const foldFunnel = (rows, keyName) => {
+        const out = {};
+        for (const r of rows) {
+          const key = r._id[keyName];
+          out[key] = out[key] || { pageViews: 0, signups: 0, paidConversions: 0 };
+          if (r._id.event === "page_view")       out[key].pageViews = r.count;
+          else if (r._id.event === "signup")      out[key].signups = r.count;
+          else if (r._id.event === "paid_conversion") out[key].paidConversions = r.count;
+        }
+        return out;
+      };
+
+      const summary = { page_view: 0, signup: 0, paid_conversion: 0 };
+      for (const r of byEvent) summary[r._id] = r.count;
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        rangeDays: days,
+        since: since.toISOString(),
+        summary,
+        conversionRate: summary.page_view
+          ? Number(((summary.signup / summary.page_view) * 100).toFixed(2))
+          : null,
+        revenue: {
+          total: paidAgg[0]?.total || 0,
+          count: paidAgg[0]?.count || 0
+        },
+        byCampaign: foldFunnel(byCampaign, "campaignId"),
+        bySource:   foldFunnel(bySource, "utmSource"),
+        recentSignups: recentSignups.map(e => ({
+          email: e.email, plan: e.plan,
+          utmSource: e.utmSource, utmCampaign: e.utmCampaign,
+          at: e.receivedAt
+        }))
+      }));
+    } catch (err) {
+      console.error("metrics error:", err.message);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // ── POST /stripe-webhook ─────────────────────────────────────────────────
   // Stripe is the ONLY thing allowed to change a user's plan.
   if (req.method === "POST" && url === "/stripe-webhook") {

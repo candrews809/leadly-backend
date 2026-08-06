@@ -46,15 +46,37 @@ const PRICE_IDS = {
   starter: "price_1TTCAsD9M5I52vZq3tu7za1b",
   pro:     "price_1TTCCyD9M5I52vZqYTNu6boC",
   agency:  "price_1TTCEQD9M5I52vZq9BSth9uA",
+
+  starter_yearly: "price_1U1ZjLD9M5I52vZqb8nt9Mr7",
+  pro_yearly:     "price_1U1ZhdD9M5I52vZqZd98zzWn",
+  agency_yearly:  "price_1U1ZeqD9M5I52vZqPIyalTXQ",
 };
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-// reverse map so the webhook can turn a price id back into a plan name
+
+// A yearly key ("starter_yearly") is the SAME plan as its monthly sibling
+// ("starter") for caps and features -- only the billing cadence differs.
+// This strips the "_yearly" suffix so cap/feature logic never needs to
+// know two plan names exist for one tier.
+function basePlan(planKey) {
+  return String(planKey || "").replace(/_yearly$/, "");
+}
+
+// reverse map so the webhook can turn a price id back into a plan name.
+// Yearly prices resolve to the base plan name; billing interval is tracked
+// separately below so cap enforcement (PLAN_CAPS[plan]) never needs a
+// "starter_yearly" entry of its own.
 const PLAN_BY_PRICE = Object.fromEntries(
-  Object.entries(PRICE_IDS).map(([plan, price]) => [price, plan])
+  Object.entries(PRICE_IDS).map(([key, price]) => [price, basePlan(key)])
+);
+// price id -> "monthly" | "yearly", for display and receipts only
+const INTERVAL_BY_PRICE = Object.fromEntries(
+  Object.entries(PRICE_IDS).map(([key, price]) => [price, key.endsWith("_yearly") ? "yearly" : "monthly"])
 );
 
-async function createCheckoutSession(plan, userEmail) {
-  const priceId = PRICE_IDS[plan] || PRICE_IDS.starter;
+async function createCheckoutSession(plan, userEmail, interval = "monthly") {
+  // interval "yearly" -> use e.g. "starter_yearly" if it exists, else fall back to monthly
+  const priceKey = interval === "yearly" && PRICE_IDS[plan + "_yearly"] ? plan + "_yearly" : plan;
+  const priceId   = PRICE_IDS[priceKey] || PRICE_IDS.starter;
   const params = new URLSearchParams({
     "payment_method_types[]": "card",
     mode: "subscription",
@@ -64,9 +86,12 @@ async function createCheckoutSession(plan, userEmail) {
     cancel_url:  "https://useleadly.io/pricing",
   });
   if (userEmail) params.set("customer_email", userEmail);
-  // stamp the plan so the webhook doesn't have to look up line items
+  // stamp the BASE plan (never "..._yearly") so the webhook writes a plan
+  // name that PLAN_CAPS already understands
   params.set("metadata[plan]", plan);
+  params.set("metadata[interval]", priceKey.endsWith("_yearly") ? "yearly" : "monthly");
   params.set("subscription_data[metadata][plan]", plan);
+  params.set("subscription_data[metadata][interval]", priceKey.endsWith("_yearly") ? "yearly" : "monthly");
   if (userEmail) params.set("metadata[email]", userEmail);
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -1782,12 +1807,13 @@ const server = createServer(async (req, res) => {
         const obj      = event.data?.object || {};
         const database = await getDb();
 
-        const setPlan = async (query, plan) => {
+        const setPlan = async (query, plan, interval) => {
           if (!query) return;
-          const r = await database.collection("users").updateOne(query, {
-            $set: { plan, planUpdatedAt: new Date() }
-          });
+          const setFields = { plan, planUpdatedAt: new Date() };
+          if (interval) setFields.billingInterval = interval; // "monthly" | "yearly", display only
+          const r = await database.collection("users").updateOne(query, { $set: setFields });
           console.log("Webhook " + event.type + " -> plan=" + plan +
+                      (interval ? " interval=" + interval : "") +
                       " matched=" + r.matchedCount);
         };
 
@@ -1796,10 +1822,11 @@ const server = createServer(async (req, res) => {
           (o.customer_email || o.customer_details?.email || o.metadata?.email || "").toLowerCase();
 
         if (event.type === "checkout.session.completed") {
-          const plan  = obj.metadata?.plan;
-          const email = emailOf(obj);
+          const plan     = obj.metadata?.plan;
+          const interval = obj.metadata?.interval === "yearly" ? "yearly" : "monthly";
+          const email    = emailOf(obj);
           if (plan && PLAN_CAPS[plan] && email) {
-            await setPlan({ email }, plan);
+            await setPlan({ email }, plan, interval);
             // remember the stripe customer so later events can find this user
             if (obj.customer) {
               await database.collection("users").updateOne(
@@ -2316,8 +2343,8 @@ const server = createServer(async (req, res) => {
     let body = ""; req.on("data", c => body += c);
     req.on("end", async () => {
       try {
-        const { plan } = JSON.parse(body);
-        const session  = await createCheckoutSession(plan, user?.email);
+        const { plan, interval } = JSON.parse(body);
+        const session  = await createCheckoutSession(plan, user?.email, interval === "yearly" ? "yearly" : "monthly");
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ url: session.url }));
       } catch (err) {

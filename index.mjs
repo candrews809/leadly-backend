@@ -318,6 +318,7 @@ if (localStorage.getItem('leadly_token')) {
 
 // Pre-fill plan from URL param (e.g. ?plan=pro)
 const urlPlan = new URLSearchParams(window.location.search).get('plan');
+const urlInterval = new URLSearchParams(window.location.search).get('interval') === 'yearly' ? 'yearly' : 'monthly';
 
 function switchTab(tab) {
   const isSignup = tab === 'signup';
@@ -360,7 +361,7 @@ async function doSignup() {
         const ckRes  = await fetch(API + '/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + data.token },
-          body: JSON.stringify({ plan: urlPlan })
+          body: JSON.stringify({ plan: urlPlan, interval: urlInterval })
         });
         const ckData = await ckRes.json();
         if (ckData.url) { window.location.href = ckData.url; return; }

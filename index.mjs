@@ -311,14 +311,28 @@ input::placeholder{color:#555}
 <script>
 const API = 'https://leadly-backend-tgbl.onrender.com';
 
-// If already logged in, skip straight to dashboard
-if (localStorage.getItem('leadly_token')) {
-  window.location.href = '/dashboard-page';
-}
-
 // Pre-fill plan from URL param (e.g. ?plan=pro)
 const urlPlan = new URLSearchParams(window.location.search).get('plan');
 const urlInterval = new URLSearchParams(window.location.search).get('interval') === 'yearly' ? 'yearly' : 'monthly';
+
+// If already logged in with no specific plan requested, skip straight to dashboard.
+// But if they arrived via a pricing link (?plan=pro etc.), they're trying to
+// upgrade an existing account -- send them straight to that plan's checkout
+// instead of bouncing them to the dashboard and hiding the choice.
+if (localStorage.getItem('leadly_token')) {
+  if (urlPlan) {
+    fetch(API + '/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('leadly_token') },
+      body: JSON.stringify({ plan: urlPlan, interval: urlInterval })
+    })
+      .then(r => r.json())
+      .then(data => { if (data.url) window.location.href = data.url; else window.location.href = '/dashboard-page'; })
+      .catch(() => { window.location.href = '/dashboard-page'; });
+  } else {
+    window.location.href = '/dashboard-page';
+  }
+}
 
 function switchTab(tab) {
   const isSignup = tab === 'signup';
@@ -1169,13 +1183,13 @@ async function saveWebhook() {
 }
 
 async function upgrade(plan) {
-  // Default to Starter -- the natural next step up from Free.
-  // Pass a plan explicitly (e.g. upgrade('pro')) to send someone to a specific tier.
-  const targetPlan = plan || 'starter';
+  // No specific plan passed in -> let the person choose on the pricing page
+  // rather than silently picking one for them.
+  if (!plan) { window.location.href = 'https://useleadly.io/#pricing'; return; }
   const res  = await fetch(API + '/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ plan: targetPlan })
+    body: JSON.stringify({ plan })
   });
   const data = await res.json();
   if (data.url) window.location.href = data.url;

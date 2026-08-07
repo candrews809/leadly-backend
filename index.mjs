@@ -320,6 +320,17 @@ const urlInterval = new URLSearchParams(window.location.search).get('interval') 
 // upgrade an existing account -- send them straight to that plan's checkout
 // instead of bouncing them to the dashboard and hiding the choice.
 if (localStorage.getItem('leadly_token')) {
+  // Hide the form immediately so it never flashes on screen while we decide
+  // where to send an already-logged-in visitor.
+  var formSection = document.getElementById('form-section');
+  if (formSection) {
+    formSection.style.display = 'none';
+    formSection.insertAdjacentHTML('afterend',
+      '<div id="redirect-notice" style="text-align:center;padding:60px 20px;color:#9a9a9a;font-size:15px">' +
+        (urlPlan ? 'Taking you to checkout…' : 'Loading your dashboard…') +
+      '</div>');
+  }
+
   if (urlPlan) {
     fetch(API + '/checkout', {
       method: 'POST',

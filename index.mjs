@@ -1110,11 +1110,14 @@ async function saveWebhook() {
   toast('Webhook saved!');
 }
 
-async function upgrade() {
+async function upgrade(plan) {
+  // Default to Starter -- the natural next step up from Free.
+  // Pass a plan explicitly (e.g. upgrade('pro')) to send someone to a specific tier.
+  const targetPlan = plan || 'starter';
   const res  = await fetch(API + '/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ plan: 'pro' })
+    body: JSON.stringify({ plan: targetPlan })
   });
   const data = await res.json();
   if (data.url) window.location.href = data.url;

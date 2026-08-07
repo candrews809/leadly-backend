@@ -256,10 +256,10 @@ input::placeholder{color:#555}
 <div class="main">
   <div class="box">
     <div id="form-section">
-      <div class="badge">Free forever — no credit card</div>
+      <div class="badge">14-day free trial — no credit card</div>
       <h1>Turn your website visitors into paying clients</h1>
       <p class="sub">Your own lead capture page, live in 60 seconds. Every lead goes straight to you.</p>
-      <div class="price-hook">Most lead services charge <s>$30–100 per lead</s>.<br><b>Leads from your Leadly page are free. Forever.</b></div>
+      <div class="price-hook">Most lead services charge <s>$30–100 per lead</s>.<br><b>Try Leadly free for 14 days. No credit card required.</b></div>
       <div class="trust-bar">
         <div class="trust-pill">SSL encrypted</div>
         <div class="trust-pill"><span>✓</span> Cancel anytime</div>
@@ -280,7 +280,7 @@ input::placeholder{color:#555}
         <button class="btn" id="signup-btn" onclick="doSignup()">Create free account →</button>
         <div class="trust">
           <div class="trust-item"><span>✓</span> No credit card</div>
-          <div class="trust-item"><span>✓</span> Free forever</div>
+          <div class="trust-item"><span>✓</span> 14-day free trial</div>
           <div class="trust-item"><span>✓</span> Setup in 60s</div>
         </div>
         <ul class="benefits">
@@ -966,6 +966,25 @@ nav{position:sticky;top:0;z-index:100;background:rgba(10,10,12,0.86);backdrop-fi
 .nav-links a:hover{color:#f5f5f0}
 .nav-links a.is-current{color:#f5f5f0}
 @media (max-width:900px){ .nav-links{display:none} }
+
+
+/* ── trial countdown + lockout ────────────────────────────────────────── */
+.trial-countdown{
+  font-size:12px;color:#9a9a9a;background:rgba(255,255,255,0.06);
+  padding:6px 12px;border-radius:100px;letter-spacing:0.01em;
+}
+.trial-countdown.trial-warning{color:#ffb020;background:rgba(255,176,32,0.12)}
+.trial-lock-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(8,8,8,0.88);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+}
+.trial-lock-card{
+  max-width:420px;padding:36px 32px;text-align:center;
+  background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:14px;
+}
+.trial-lock-title{font-size:20px;font-weight:600;letter-spacing:-0.02em;margin-bottom:10px}
+.trial-lock-body{font-size:14px;color:#9a9a9a;line-height:1.5;margin-bottom:22px}
 </style>
 </head>
 <body>
@@ -999,6 +1018,44 @@ async function init() {
   window._stats = { total: d.leadCount ?? 0, month: d.leadsThisMonth ?? 0, cap: d.cap ?? 50 };
   renderDashboard(d);
   renderStats();
+  if (d.trialLocked) {
+    showTrialLock();
+  } else if (d.trialEndsAt) {
+    startTrialCountdown(d.trialEndsAt);
+  }
+}
+
+// ── trial countdown + lockout ────────────────────────────────────────────
+function startTrialCountdown(trialEndsAt) {
+  const el = document.getElementById('trial-countdown');
+  if (!el) return;
+  const end = new Date(trialEndsAt).getTime();
+  function tick() {
+    const msLeft = end - Date.now();
+    if (msLeft <= 0) { el.textContent = 'Trial expired'; showTrialLock(); clearInterval(timer); return; }
+    const days  = Math.floor(msLeft / 86400000);
+    const hours = Math.floor((msLeft % 86400000) / 3600000);
+    el.textContent = days >= 1
+      ? 'Trial: ' + days + 'd ' + hours + 'h left'
+      : 'Trial: ' + hours + 'h left';
+    el.classList.toggle('trial-warning', days < 3);
+  }
+  tick();
+  const timer = setInterval(tick, 60000); // recheck every minute; no need for per-second ticking
+}
+
+function showTrialLock() {
+  if (document.getElementById('trial-lock-overlay')) return; // already shown
+  const overlay = document.createElement('div');
+  overlay.id = 'trial-lock-overlay';
+  overlay.className = 'trial-lock-overlay';
+  overlay.innerHTML =
+    '<div class="trial-lock-card">' +
+      '<div class="trial-lock-title">Your 14-day trial has ended</div>' +
+      '<div class="trial-lock-body">Upgrade to keep capturing leads and using your dashboard.</div>' +
+      '<button class="upgrade-btn" onclick="upgrade()">Upgrade now</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
 }
 
 function renderDashboard(d) {
@@ -1032,6 +1089,7 @@ function renderDashboard(d) {
     <a href="/dashboard-page" class="is-current">Dashboard</a>
   </div>
   <div class="nav-right">
+    \${d.trialEndsAt ? \`<span id="trial-countdown" class="trial-countdown"></span>\` : ''}
     \${d.plan === 'free' ? \`<button class="upgrade-btn" onclick="upgrade()">Upgrade</button>\` : ''}
     <a href="\${PORTAL}" target="_blank" class="nav-btn">Manage Subscription</a>
     <button class="nav-btn" onclick="window.location.href='/integrations-page'">Integrations</button>
@@ -1643,6 +1701,14 @@ function currentMonthCount(stats) {
   return stats.monthKey === monthKey() ? (stats.monthCount || 0) : 0;
 }
 
+// Only free-plan accounts can be trial-locked. Any paid plan is exempt,
+// even if a stale trialEndsAt is still sitting on the user document.
+function isTrialLocked(user) {
+  if (!user || user.plan !== "free") return false;
+  if (!user.trialEndsAt) return false; // accounts created before this feature: never locked
+  return new Date(user.trialEndsAt).getTime() < Date.now();
+}
+
 const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -1931,11 +1997,14 @@ const server = createServer(async (req, res) => {
         const slug     = (generateSlug(businessName) || "user") + "-" + Math.random().toString(36).slice(2, 6);
         // Plan is NEVER taken from the client — only the Stripe webhook may upgrade.
         const userPlan = "free";
+        const TRIAL_DAYS = 14;
+        const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
         const user     = {
           name, email: email.toLowerCase(),
           password: hashPassword(password),
           token, businessName, slug,
           plan: userPlan,
+          trialEndsAt, // only meaningful while plan === "free"; paid plans ignore this entirely
           onboarded: false,
           webhooks: { salesforce: "", hubspot: "", gohighlevel: "", custom: "" },
           createdAt: new Date(),
@@ -2055,6 +2124,8 @@ const server = createServer(async (req, res) => {
       businessName:  user.businessName,
       plan:          user.plan || "free",
       onboarded:     user.onboarded !== false,
+      trialEndsAt:   (user.plan === "free" && user.trialEndsAt) ? user.trialEndsAt : null,
+      trialLocked:   isTrialLocked(user),
       cap,
       pageUrl:       `https://useleadly.io/page/${user.slug}`,
       webhooks:      webhooks,
@@ -2274,6 +2345,12 @@ const server = createServer(async (req, res) => {
         const database = await getDb();
         // Look the owner up FIRST so we can enforce their monthly plan cap
         const owner = await database.collection("users").findOne({ slug: lead.businessSlug });
+        if (owner && isTrialLocked(owner)) {
+          console.log("Trial expired, blocking lead capture for " + owner.slug);
+          res.writeHead(402, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Trial expired", trialExpired: true }));
+          return;
+        }
         if (owner) {
           const stats = await ensureCounters(database, owner);
           const cap   = PLAN_CAPS[owner.plan] || PLAN_CAPS.free;
